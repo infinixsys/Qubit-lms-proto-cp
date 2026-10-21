@@ -1,0 +1,23 @@
+node_modules/
+dist/
+.env
+.env.local
+.data/
+*.log
+.DS_Store
+android/.gradle/
+android/local.properties
+android/app/build/
+ios/App/Pods/
+ios/App/build/
+*.tsbuildinfo
+playwright-report/
+test-results/
+
+# Local credentials and native signing material
+.env.*
+!.env.example
+*.jks
+*.keystore
+*.p12
+*.mobileprovision

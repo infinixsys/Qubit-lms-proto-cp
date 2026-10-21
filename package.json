@@ -1,0 +1,49 @@
+{
+  "name": "qubit-lms-cp",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 5173",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc --noEmit",
+    "preview": "vite preview --host 0.0.0.0 --port 5173",
+    "api": "node --watch server/index.mjs",
+    "start": "concurrently -k \"npm:api\" \"npm:dev\"",
+    "test": "node --test server/*.test.mjs",
+    "backup": "node server/backup.mjs",
+    "test:e2e": "playwright test",
+    "format": "prettier --write src server tests vite.config.ts playwright.config.ts",
+    "format:check": "prettier --check src server tests vite.config.ts playwright.config.ts",
+    "dev:all": "concurrently -k -n API,ADMIN,LEARNER \"npm run api\" \"npm run dev\" \"npm run dev --prefix ../Qubit-lms-proto-app\""
+  },
+  "dependencies": {
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/cors": "^11.1.0",
+    "@fastify/rate-limit": "^10.3.0",
+    "@fontsource/dm-sans": "^5.3.0",
+    "@fontsource/manrope": "^5.3.0",
+    "fastify": "^5.6.1",
+    "lucide-react": "^0.468.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.9.4",
+    "recharts": "^3.3.0",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^24.9.1",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^5.0.4",
+    "concurrently": "^9.2.1",
+    "prettier": "^3.9.10",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.11"
+  }
+}
