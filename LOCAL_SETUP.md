@@ -73,11 +73,11 @@ Keep this terminal running. Open these addresses **on your computer**:
 
 | Product | Local address |
 | --- | --- |
-| Control panel | http://localhost:5173 |
-| Learner app | http://localhost:5174 |
-| API health | http://localhost:4000/api/v1/health |
+| Control panel | http://localhost:7311 |
+| Learner app | http://localhost:7312 |
+| API health | http://localhost:7310/api/v1/health |
 
-Use `localhost` consistently and leave ports 4000, 5173 and 5174 free. The browser apps proxy `/api` to the local backend automatically. No `.env` file, API keys, Docker, PostgreSQL or paid services are required for this demo. Stop the servers with Ctrl+C.
+Use `localhost` consistently and leave ports 7310, 7311 and 7312 free. The browser apps proxy `/api` to the local backend automatically. No `.env` file, API keys, Docker, PostgreSQL or paid services are required for this demo. Stop the servers with Ctrl+C. If a configured port is occupied, startup reports the conflict and exits instead of silently choosing another port.
 
 On Windows, these Git/npm commands also work in PowerShell. The optional `scripts/setup.sh` helper requires Bash (Git Bash, WSL, macOS or Linux).
 
@@ -113,7 +113,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-On Linux, browser system libraries may also be needed: `npx playwright install --with-deps chromium`. Browser tests create synthetic local records. They start/reuse both apps plus a built learner preview on port 4174 for offline-shell testing.
+On Linux, browser system libraries may also be needed: `npx playwright install --with-deps chromium`. Browser tests create synthetic local records. They start/reuse both apps plus a built learner preview on port 7313 for offline-shell testing.
 
 ## 7. Android and iOS projects
 
@@ -134,7 +134,7 @@ A native device cannot use the browser's Vite API proxy. Set a reachable **HTTPS
 
 - Local records persist in `Qubit-lms-proto-cp/.data/qubit.sqlite`. Uploads and local backups are also development data; they are excluded from Git.
 - Keep `.data` when updating. Back up the database with `npm run backup` before discarding any records.
-- To update, stop the servers, run `git pull --ff-only` in each checkout, rerun `npm ci` in each, then restart `npm run dev:all` from the CP checkout. Preserve your local source changes before pulling.
+- To update, stop the servers, run `git pull --ff-only origin main` in each checkout, rerun `npm ci` in each, then restart `npm run dev:all` from the CP checkout. Preserve your local source changes before pulling.
 - If the app cannot connect, verify the API health address and check that all three processes started. Avoid mixing `localhost` and `127.0.0.1` between the two browser windows.
 - Offline reading requires an explicit lesson download. Full offline page reload works in a built production preview; the Vite development server is not an offline runtime.
 - Live AI, payments, email, push, media transcoding and conferencing are not connected. Review `docs/FEATURE_MATRIX.md` for precise prototype boundaries.

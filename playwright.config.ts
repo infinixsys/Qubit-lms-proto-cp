@@ -20,20 +20,20 @@ export default defineConfig({
   webServer: [
     {
       command:
-        "npm run build --prefix ../Qubit-lms-proto-app && npm run preview --prefix ../Qubit-lms-proto-app -- --port 4174",
-      url: "http://localhost:4174",
+        "npm run build --prefix ../Qubit-lms-proto-app && npm run preview --prefix ../Qubit-lms-proto-app -- --port 7313",
+      url: "http://localhost:7313",
       reuseExistingServer: !process.env.CI,
       timeout: 30000,
     },
     {
       command: "npm run start",
-      url: "http://localhost:5173",
+      url: "http://localhost:7311",
       reuseExistingServer: !process.env.CI,
       timeout: 30000,
     },
     {
       command: "npm run dev --prefix ../Qubit-lms-proto-app",
-      url: "http://localhost:5174",
+      url: "http://localhost:7312",
       reuseExistingServer: !process.env.CI,
       timeout: 30000,
     },

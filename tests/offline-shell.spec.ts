@@ -8,7 +8,7 @@ test("production app reloads downloaded content offline and enforces download ex
     page = await context.newPage();
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("http://localhost:4174");
+  await page.goto("http://localhost:7313");
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page
     .getByRole("button", { name: "Explore the learner demo", exact: true })
@@ -16,7 +16,7 @@ test("production app reloads downloaded content offline and enforces download ex
   await expect(
     page.getByRole("heading", { name: "Hello, Jamie" }),
   ).toBeVisible();
-  await page.goto("http://localhost:4174/lesson/design-thinking-lesson-1");
+  await page.goto("http://localhost:7313/lesson/design-thinking-lesson-1");
   await page
     .getByRole("button", { name: "Download lesson", exact: true })
     .click();

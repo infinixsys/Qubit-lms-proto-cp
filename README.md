@@ -11,12 +11,12 @@ The control panel includes the shared learning API. Both frontends use the same 
 Requires Node **24.19.0** or a compatible Node 24 release (built-in `node:sqlite`) and npm.
 
 ```bash
-# Terminal 1: API (4000) + control panel (5173)
+# Terminal 1: API (7310) + control panel (7311)
 cd /workspace/Qubit-lms-proto-cp
 npm ci
 npm run start
 
-# Terminal 2: separate learner application (5174)
+# Terminal 2: separate learner application (7312)
 cd /workspace/Qubit-lms-proto-app
 npm ci
 npm run dev
@@ -74,7 +74,7 @@ Browser tests use system Chromium when installed at `/usr/bin/chromium`. Otherwi
 
 | Name | Default / purpose |
 | --- | --- |
-| PORT | `4000` API port |
+| PORT | `7310` API port |
 | API_HOST | `127.0.0.1`; bind deliberately when exposing the API |
 | DB_PATH | `server/../.data/qubit.sqlite` |
 | ALLOWED_ORIGINS | Explicit localhost frontend and Capacitor origins in `server/app.mjs` |

@@ -125,7 +125,7 @@ export async function createApp({ dbPath, logger = false } = {}) {
   app.store = store;
   const origins = (
     process.env.ALLOWED_ORIGINS ||
-    "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:4174,http://127.0.0.1:4174,capacitor://localhost,http://localhost,https://localhost"
+    "http://localhost:7311,http://127.0.0.1:7311,http://localhost:7312,http://127.0.0.1:7312,http://localhost:7313,http://127.0.0.1:7313,capacitor://localhost,http://localhost,https://localhost"
   ).split(",");
   await app.register(cookie);
   await app.register(cors, { origin: origins, credentials: true });

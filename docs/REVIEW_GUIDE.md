@@ -4,7 +4,7 @@ Start both products using the repository README. Use the existing checkouts; a c
 
 ## Review the learner journey
 
-1. Open the learner app on port 5174. Explore the learner demo or register a synthetic account.
+1. Open the learner app on port 7312. Explore the learner demo or register a synthetic account.
 2. Browse Explore, search by instructor or topic, filter category/level, save a course, and open a course overview.
 3. Enrol in an open course. Try a restricted course to see the access-denial path.
 4. Open the Course Atlas, switch to list view, open a reading lesson, use device read-aloud and the transcript, save a personal note and bookmark.
@@ -19,7 +19,7 @@ Start both products using the repository README. Use the existing checkouts; a c
 
 ## Review the administration journey
 
-1. Open the control panel on port 5173. Enter the demo workspace as Super Admin, then try narrower roles to see permitted surfaces.
+1. Open the control panel on port 7311. Enter the demo workspace as Super Admin, then try narrower roles to see permitted surfaces.
 2. Search People, preview a CSV import, record an invitation, suspend a test account, grant a restricted course and revoke a session. Role changes require the administrator's password and a reason.
 3. Create a group, save its member roster, and assign a published course to the saved cohort. Members and courses must share the same tenant.
 4. Create a course draft with outcomes and an instructor. Add a complete reading lesson, confirm rights, then approve review, run preflight and publish. Failed preflight prevents publication.

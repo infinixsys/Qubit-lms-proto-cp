@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-const APP = "http://localhost:5174",
-  ADMIN = "http://localhost:5173";
+const APP = "http://localhost:7312",
+  ADMIN = "http://localhost:7311";
 const password = "JourneyTest2026!";
 test("learner completes learning, notes, offline sync, assessment, certificate, and assignment review", async ({
   browser,
@@ -12,12 +12,14 @@ test("learner completes learning, notes, offline sync, assessment, certificate, 
     page = await context.newPage();
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  const email = `journey-${Date.now()}@example.test`;
+  const runId = Date.now();
+  const learnerName = `Taylor Journey ${runId}`;
+  const email = `journey-${runId}@example.test`;
   await page.goto(APP);
   await page
     .getByRole("button", { name: "Create an account", exact: false })
     .click();
-  await page.getByLabel("Your name", { exact: true }).fill("Taylor Journey");
+  await page.getByLabel("Your name", { exact: true }).fill(learnerName);
   await page.getByLabel("Email", { exact: true }).fill(email);
   await page.getByLabel("Password · at least 12 characters").fill(password);
   await page
@@ -194,12 +196,9 @@ test("learner completes learning, notes, offline sync, assessment, certificate, 
   ).toBeVisible();
   await ap.goto(ADMIN + "/submissions");
   await ap
-    .getByRole("button", {
-      name: "View Your first human-centred challenge",
-      exact: true,
-    })
-    .last()
-    .click();
+    .getByRole("textbox", { name: "Search Review workspace", exact: true })
+    .fill(learnerName);
+  await ap.getByRole("button", { name: learnerName, exact: true }).click();
   await ap
     .getByRole("button", { name: "Review & give feedback", exact: false })
     .click();
