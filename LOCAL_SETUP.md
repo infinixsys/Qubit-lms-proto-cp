@@ -135,6 +135,7 @@ A native device cannot use the browser's Vite API proxy. Set a reachable **HTTPS
 - Local records persist in `Qubit-lms-proto-cp/.data/qubit.sqlite`. Uploads and local backups are also development data; they are excluded from Git.
 - Keep `.data` when updating. Back up the database with `npm run backup` before discarding any records.
 - To update, stop the servers, run `git pull --ff-only origin main` in each checkout, rerun `npm ci` in each, then restart `npm run dev:all` from the CP checkout. Preserve your local source changes before pulling.
+- On Windows, if an older checkout reports `ENOENT` with a duplicated drive letter such as `D:\D:\`, stop Qubit, pull the latest CP `main`, and restart `npm run dev:all`. The default database uses native filesystem paths; you do not need to delete `.data` or change your Node version.
 - If the app cannot connect, verify the API health address and check that all three processes started. Avoid mixing `localhost` and `127.0.0.1` between the two browser windows.
 - Offline reading requires an explicit lesson download. Full offline page reload works in a built production preview; the Vite development server is not an offline runtime.
 - Live AI, payments, email, push, media transcoding and conferencing are not connected. Review `docs/FEATURE_MATRIX.md` for precise prototype boundaries.

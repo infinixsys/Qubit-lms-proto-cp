@@ -1,6 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   randomUUID,
   scryptSync,
@@ -18,10 +19,10 @@ export function verifyPassword(p, hash) {
     return false;
   }
 }
-export function openDb(
-  path = process.env.DB_PATH ||
-    new URL("../.data/qubit.sqlite", import.meta.url).pathname,
-) {
+export const DEFAULT_DB_PATH = fileURLToPath(
+  new URL("../.data/qubit.sqlite", import.meta.url),
+);
+export function openDb(path = process.env.DB_PATH || DEFAULT_DB_PATH) {
   if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
   const db = new DatabaseSync(path);
   db.exec("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;");

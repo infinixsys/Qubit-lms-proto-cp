@@ -1,7 +1,8 @@
 import { DatabaseSync, backup } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import { resolve } from "node:path";
-const source = resolve(process.env.DB_PATH || ".data/qubit.sqlite");
+import { DEFAULT_DB_PATH } from "./db.mjs";
+const source = resolve(process.env.DB_PATH || DEFAULT_DB_PATH);
 const folder = resolve(".data/backups");
 mkdirSync(folder, { recursive: true });
 const target = resolve(
