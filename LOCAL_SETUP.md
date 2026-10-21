@@ -33,6 +33,26 @@ qubit-lms/
   Qubit-lms-proto-app/
 ```
 
+## If the cloud push is blocked
+
+The chat can provide Git bundles containing the complete committed prototypes. Download both bundles into the same folder, then run:
+
+```sh
+git clone -b work Qubit-lms-proto-cp.bundle Qubit-lms-proto-cp
+git clone -b work Qubit-lms-proto-app.bundle Qubit-lms-proto-app
+git -C Qubit-lms-proto-cp remote set-url origin https://github.com/infinixsys/Qubit-lms-proto-cp.git
+git -C Qubit-lms-proto-app remote set-url origin https://github.com/infinixsys/Qubit-lms-proto-app.git
+```
+
+Continue with installation below. The bundles preserve Git history. Once your GitHub authentication has write access, you can publish these commits from your computer with:
+
+```sh
+git -C Qubit-lms-proto-cp push origin HEAD:main
+git -C Qubit-lms-proto-app push origin HEAD:main
+```
+
+Use ordinary pushes; do not force-push if the remote has newer work. Until a push succeeds, cloning GitHub alone will not contain these prototype commits.
+
 ## 3. Install dependencies
 
 From the `qubit-lms` parent folder:
