@@ -64,7 +64,7 @@ These are public prototype credentials and synthetic records. Register a new lea
 
 ## Install the Android learner APK
 
-Download [Refix-India-Institute-debug.apk](https://github.com/infinixsys/Qubit-lms-proto-app/releases/download/android-prototype-refix-2026-10-22-r2/Refix-India-Institute-debug.apk) from the [GitHub release](https://github.com/infinixsys/Qubit-lms-proto-app/releases/tag/android-prototype-refix-2026-10-22-r2), or build one as below. Transfer it to your Android phone and allow installation from the app used to open the APK. The APK has Android API 23 as its install minimum and targets API 35. Use an up-to-date Android System WebView; testing on your target phone is still required. The local test APK permits HTTP to your development computer; it is not a Play Store release.
+Download [Refix-India-Institute-debug.apk](https://github.com/infinixsys/Qubit-lms-proto-app/releases/download/android-prototype-control-centre-2026-10-22/Refix-India-Institute-debug.apk) from the [GitHub release](https://github.com/infinixsys/Qubit-lms-proto-app/releases/tag/android-prototype-control-centre-2026-10-22), or build one as below. Transfer it to your Android phone and allow installation from the app used to open the APK. The APK has Android API 23 as its install minimum and targets API 35. Use an up-to-date Android System WebView; testing on your target phone is still required. The local test APK permits HTTP to your development computer; it is not a Play Store release.
 
 1. Start `npm run dev:all` on your computer.
 2. Connect your phone and computer to the same Wi-Fi.
@@ -135,3 +135,20 @@ In a course, **Duplicate**, **Archive course / Restore draft**, and **Arrange cu
 Learners open **Repair bench** on Home or **Practical lab & batches** in You. Submit written bench observations for an enrolled, approved course. The trainer reviews the work as Changes requested or Competent, with feedback and a score. This is a written-observation workflow; photo/video evidence upload, attendance tracking and a professional-certification process are not included.
 
 Client website inspection was blocked by this cloud environment's network policy. The Refix institute wordmark and navy/blue/copper design are a proposed visual direction, not a verified reproduction of refixindia.com.
+
+## Original-document control-centre upgrade
+
+The current control panel adds these focused workspaces while keeping the Refix institute design:
+
+- **Header search / Ctrl+K**: find authorised pages, courses, learners and support records.
+- **Control centre → People → People & imports**: server-filtered directory, CSV template/preview/errors, pending-account import and one-use invitation links. Links are shared manually; no email is sent.
+- **Assessments**: draft timer, attempts, retry delay, passing score, question count, IST availability and answer-reveal rules. Review and publish the course to apply them to a new version. Existing enrolments and active attempts keep their saved rules.
+- **Control centre → Learning → Publishing & review**: revision-specific review decisions and publication history.
+- **Announcements**: course/batch/all-learner in-app publishing, scheduling, cancellation and read counts. The scheduler runs every 15 seconds while the API is running.
+- **Reports**: course/cohort/date filters, CSV exports, private saved views and explicit metric definitions; revenue remains separate.
+- **Control centre → Governance**: staff authenticator setup/sessions and reviewed privacy/export/deactivation requests.
+- **Platform operations**: actual local checks, feature switches, connected-provider state and incident records.
+
+If you enable staff MFA, save the recovery codes when displayed. Authenticator secrets use a private `.security-key` file beside the database; it must be backed up securely along with the database and media. `npm run backup` copies only the database. The key is ignored by Git. Keep both repositories updated so the learner's assessment screen displays the configured rules.
+
+See [the original requirement mapping](docs/CONTROL_PANEL_UPGRADE.md) for workflow details and the remaining provider/production boundaries. Existing data is preserved; assessment attempts gain a repeat-safe policy-snapshot column. No separate backend repository is needed.

@@ -43,6 +43,8 @@ export const ownerAreas = [
   "tickets",
   "audit",
   "settings",
+  "privacy",
+  "operations",
 ];
 export function userPermissions(store, u, defaults) {
   if (u.role === "Super Admin") return ["*"];

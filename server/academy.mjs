@@ -314,13 +314,12 @@ export function registerAcademy({ app, store, auth, permit }) {
         .parse(req.body),
       c = owned(u, "courses", b.courseId);
     assertCoachingAccess(store, u, c);
-    if (
-      !db
-        .prepare(
-          "SELECT 1 FROM enrolments WHERE user_id=? AND course_id=? AND state='Active'",
-        )
-        .get(u.id, c.id)
-    )
+    const enrollment = db
+      .prepare(
+        "SELECT version FROM enrolments WHERE user_id=? AND course_id=? AND state='Active'",
+      )
+      .get(u.id, c.id);
+    if (!enrollment)
       fail(403, "Join this course before submitting practical work.");
     const result = put(
       "academy_practicals",
@@ -329,6 +328,7 @@ export function registerAcademy({ app, store, auth, permit }) {
         id: randomUUID(),
         userId: u.id,
         status: "Submitted",
+        courseVersion: enrollment.version,
         feedback: "",
         score: null,
         created: stamp(),

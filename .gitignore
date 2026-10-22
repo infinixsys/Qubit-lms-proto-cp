@@ -21,3 +21,6 @@ test-results/
 *.keystore
 *.p12
 *.mobileprovision
+
+# Local encryption material for staff authenticator secrets
+.security-key

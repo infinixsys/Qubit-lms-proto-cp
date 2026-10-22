@@ -1,3 +1,15 @@
+import {
+  CommandSearch,
+  JoinInvitation,
+  Directory,
+  Assessments,
+  Publishing,
+  Communications,
+  Insights,
+  Governance,
+  Platform,
+} from "./control-center";
+import { Security } from "./security";
 import { useEffect, useState } from "react";
 import {
   Link,
@@ -49,17 +61,18 @@ import {
   CourseControls,
   BillingExport,
 } from "./academy";
-import { ResourcePage, Audit, Operations } from "./Legacy";
+import { ResourcePage, Audit } from "./Legacy";
 const navigation = [
   ["/", "Overview", "LayoutDashboard", "analytics"],
   ["/learners", "Learners", "UsersRound", "users"],
   ["/courses", "Courses", "BookOpen", "courses"],
+  ["/assessments", "Assessments", "ClipboardList", "assessments"],
   ["/batches", "Training batches", "UsersRound", "courses"],
   ["/practicals", "Practical reviews", "ClipboardList", "assessments"],
   ["/admissions", "Admissions", "ClipboardList", "billing"],
   ["/packages", "Packages", "CreditCard", "billing"],
   ["/reports", "Reports", "ChartNoAxesCombined", "analytics"],
-  ["/workspace", "Workspace", "Settings2", "any"],
+  ["/workspace", "Control centre", "Settings2", "any"],
 ];
 function Heading({
   title,
@@ -106,6 +119,35 @@ function Table({
   );
 }
 function Login({ done }: { done: (d: Row) => void }) {
+  const [challenge, setChallenge] = useState("");
+  if (challenge)
+    return (
+      <div className="owner-mfa-login">
+        <Brand />
+        <span className="auth-icon">
+          <Icon name="ShieldCheck" size={30} />
+        </span>
+        <h1>Verify your sign-in</h1>
+        <p>Enter an unused authenticator code or one of your recovery codes.</p>
+        <Form
+          fields={[
+            {
+              name: "code",
+              label: "Authenticator or recovery code",
+              required: true,
+            },
+          ]}
+          label="Verify & sign in"
+          onSubmit={async (v) =>
+            done(await post("/auth/mfa", { challenge, ...v }))
+          }
+        />
+        <button className="text-link" onClick={() => setChallenge("")}>
+          Back to password sign-in
+        </button>
+      </div>
+    );
+
   return (
     <div className="owner-auth">
       <section>
@@ -150,7 +192,11 @@ function Login({ done }: { done: (d: Row) => void }) {
             ]}
             initial={{ email: "admin@qubit.demo", password: "QubitDemo2026!" }}
             label="Sign in to dashboard"
-            onSubmit={async (v) => done(await post("/auth/login", v))}
+            onSubmit={async (v) => {
+              const r = await post("/auth/login", v);
+              if (r.mfaRequired) setChallenge(r.challenge);
+              else done(r);
+            }}
           />
           <div className="demo-note">
             <Icon name="Info" size={17} />
@@ -175,6 +221,7 @@ export default function App() {
       .catch(() => {})
       .finally(() => setReady(true));
   }, []);
+  if (location.pathname === "/join") return <JoinInvitation />;
   if (!ready) return <Loading />;
   if (!session) return <Login done={setSession} />;
   const can = (p: string) =>
@@ -255,9 +302,7 @@ export default function App() {
           >
             <Icon name="Menu" />
           </button>
-          <span>
-            <Icon name="Building2" size={17} /> Your institute, connected
-          </span>
+          <CommandSearch can={can} />
           <div>
             <span className="india-clock">
               {new Date().toLocaleDateString("en-IN", {
@@ -270,7 +315,7 @@ export default function App() {
             <Link
               className="icon-btn"
               aria-label="Announcements"
-              to="/tools/notifications"
+              to="/communications"
             >
               <Icon name="Bell" size={20} />
             </Link>
@@ -301,13 +346,20 @@ export default function App() {
             <Route path="/practicals" element={<Practicals />} />
             <Route path="/admissions" element={<Admissions />} />
             <Route path="/packages" element={<Packages />} />
-            <Route path="/reports" element={<Reports />} />
+            <Route path="/reports" element={<Insights />} />
+            <Route path="/revenue" element={<Reports />} />
+            <Route path="/directory" element={<Directory />} />
+            <Route path="/publishing" element={<Publishing />} />
+            <Route path="/assessments" element={<Assessments />} />
+            <Route path="/communications" element={<Communications />} />
+            <Route path="/governance" element={<Governance />} />
+            <Route path="/security" element={<Security />} />
             <Route path="/workspace" element={<Workspace can={can} />} />
             <Route path="/media" element={<Media />} />
             <Route path="/permissions" element={<Permissions />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/audit" element={<Audit />} />
-            <Route path="/operations" element={<Operations />} />
+            <Route path="/operations" element={<Platform />} />
             <Route path="/tools/:kind" element={<Tools />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
@@ -588,7 +640,9 @@ function Overview() {
 function Learners() {
   const d = useData("/owner/learners"),
     toast = useToast();
-  const [query, setQuery] = useState(""),
+  const [query, setQuery] = useState(
+      new URLSearchParams(location.search).get("q") || "",
+    ),
     [filter, setFilter] = useState(
       new URLSearchParams(location.search).get("filter") === "pending"
         ? "Pending activation"
@@ -2033,95 +2087,194 @@ function Reports() {
   );
 }
 function Workspace({ can }: { can: (s: string) => boolean }) {
+  const [section, setSection] = useState("Learning");
   const tools = [
     [
-      "/media",
-      "Media library",
-      "Upload videos, images and chapter documents.",
-      "Images",
-      "media",
+      "Learning",
+      "/publishing",
+      "Publishing & review",
+      "Draft feedback, readiness and version history.",
+      "BookOpenCheck",
+      "courses",
     ],
     [
-      "/permissions",
-      "Team & permissions",
-      "Give your staff the right level of access.",
-      "ShieldCheck",
-      "permissions",
-    ],
-    [
-      "/tools/questions",
-      "Question bank",
-      "Create course-specific tests and practice.",
-      "CircleHelp",
-      "assessments",
-    ],
-    [
-      "/tools/assignments",
-      "Assignments",
-      "Set meaningful work for your learners.",
+      "Learning",
+      "/assessments",
+      "Assessment rules",
+      "Versioned timers, attempts, pass marks and completion.",
       "ClipboardList",
       "assessments",
     ],
     [
+      "Learning",
+      "/media",
+      "Media library",
+      "Private videos, images and learning documents.",
+      "Images",
+      "media",
+    ],
+    [
+      "Learning",
+      "/tools/questions",
+      "Question bank",
+      "Course-specific questions and protected answer keys.",
+      "CircleHelp",
+      "assessments",
+    ],
+    [
+      "Learning",
+      "/tools/assignments",
+      "Assignments",
+      "Course-linked work and submission instructions.",
+      "ClipboardList",
+      "assessments",
+    ],
+    [
+      "Learning",
       "/tools/submissions",
-      "Review submissions",
-      "Grade work and share useful feedback.",
+      "Submission reviews",
+      "Grades, feedback and returned work.",
       "ListChecks",
       "assessments",
     ],
     [
+      "Learning",
       "/tools/sessions",
       "Live classes",
-      "Schedule teaching sessions and join links.",
+      "Schedules and approved HTTPS join links.",
       "Video",
-      "courses",
+      "sessions",
     ],
     [
-      "/tools/notifications",
+      "Learning",
+      "/tools/certificates",
+      "Certificates",
+      "Issued credentials, verification and revocation.",
+      "Award",
+      "certificates",
+    ],
+    [
+      "People",
+      "/directory",
+      "People & imports",
+      "Search, validated CSV imports and invitation links.",
+      "UsersRound",
+      "users",
+    ],
+    [
+      "People",
+      "/permissions",
+      "Team & permissions",
+      "Staff accounts and explicit permission grants.",
+      "ShieldCheck",
+      "permissions",
+    ],
+    [
+      "People",
+      "/communications",
       "Announcements",
-      "Keep learners informed with in-app updates.",
+      "Scoped in-app updates and scheduled publishing.",
       "Megaphone",
       "notifications",
     ],
     [
+      "People",
       "/tools/tickets",
       "Learner support",
-      "Respond to questions and resolve requests.",
+      "Authorised learner cases and responses.",
       "LifeBuoy",
       "tickets",
     ],
     [
+      "Governance",
+      "/security",
+      "Security & sessions",
+      "Authenticator setup, recovery codes and staff sessions.",
+      "LockKeyhole",
+      "any",
+    ],
+    [
+      "Governance",
+      "/governance",
+      "Privacy & retention",
+      "Verified requests, export and retention decisions.",
+      "ShieldCheck",
+      "privacy",
+    ],
+    [
+      "Governance",
       "/audit",
       "Audit trail",
-      "See who changed what across your institute.",
+      "Administrative changes and authorised exports.",
       "Activity",
       "audit",
     ],
     [
+      "Governance",
       "/settings",
       "Institute settings",
-      "Manage your identity and payment instructions.",
+      "Institute identity and payment instructions.",
       "Building2",
       "settings",
     ],
     [
+      "Operations",
       "/operations",
-      "Backup & operations",
-      "Keep your local institute data backed up.",
-      "DatabaseBackup",
+      "Platform operations",
+      "Connected services, feature switches and incidents.",
+      "Settings2",
       "settings",
     ],
+    [
+      "Operations",
+      "/reports",
+      "Learning insights",
+      "Course and cohort reports with saved filters.",
+      "ChartNoAxesCombined",
+      "analytics",
+    ],
+    [
+      "Operations",
+      "/revenue",
+      "Revenue reports",
+      "Verified payments, renewals and subscription trends.",
+      "CreditCard",
+      "analytics",
+    ],
+    [
+      "Operations",
+      "/tools/incidents",
+      "Incident records",
+      "Investigations, severity and resolution notes.",
+      "Activity",
+      "operations",
+    ],
   ];
+  const sections = [
+    ...new Set(tools.filter((t) => can(t[5])).map((t) => t[0])),
+  ];
+  const active = sections.includes(section) ? section : sections[0];
   return (
     <>
       <Heading
-        title="A workspace for your team"
-        text="The tools you need, organised around the way you work."
+        title="Institute control centre"
+        text="Focused workspaces for learning, people, governance and operations."
       />
+      <div className="filter-tabs page-tabs">
+        {sections.map((s) => (
+          <button
+            key={s}
+            className={s === active ? "selected" : ""}
+            onClick={() => setSection(s)}
+          >
+            {s}
+          </button>
+        ))}
+      </div>
       <div className="workspace-grid">
         {tools
-          .filter((t) => can(t[4]))
-          .map(([path, title, text, icon]) => (
+          .filter((t) => t[0] === active && can(t[5]))
+          .map(([, path, title, text, icon]) => (
             <Link to={path} key={path} className="workspace-card">
               <span className="soft-icon">
                 <Icon name={icon} size={25} />
@@ -2536,6 +2689,8 @@ function Settings() {
 function Tools() {
   const { kind } = useParams();
   return [
+    "certificates",
+    "incidents",
     "questions",
     "assignments",
     "submissions",

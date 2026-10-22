@@ -1,9 +1,15 @@
+import {
+  registerControlCenter,
+  assessmentPolicy,
+  defaultAssessmentPolicy,
+} from "./control-center.mjs";
+import { registerSecurity } from "./security.mjs";
 import { registerAcademy } from "./academy.mjs";
 import Fastify from "fastify";
 import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
-import { randomUUID, randomBytes, createHash } from "node:crypto";
+import { randomUUID, randomBytes, createHash, randomInt } from "node:crypto";
 import { z } from "zod";
 import { openDb, safeUser, hashPassword, verifyPassword } from "./db.mjs";
 import { now, lessonsFor } from "./seed.mjs";
@@ -300,6 +306,41 @@ export async function createApp({ dbPath, logger = false } = {}) {
     integrations: "not configured",
     timestamp: now(),
   }));
+  const issueSession = (u, req, reply) => {
+    const token = randomBytes(32).toString("hex");
+    db.prepare("INSERT INTO sessions VALUES(?,?,?,?,?)").run(
+      digest(token),
+      u.id,
+      Date.now() + 86400000,
+      now(),
+      (req.headers["user-agent"] || "Development client").slice(0, 160),
+    );
+    reply.setCookie(cookieName(req), token, {
+      path: "/api",
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 86400,
+    });
+    audit(u, "Signed in", u.id);
+    return {
+      user: safeUser(u),
+      permissions: permissionsFor(u),
+      nativeToken:
+        req.headers["x-qubit-platform"] === "android" &&
+        surface(req) === "learner"
+          ? token
+          : undefined,
+      mfa: { enforced: security.enabled(u.id) },
+    };
+  };
+  const security = registerSecurity({
+    app,
+    store,
+    auth,
+    issueSession,
+    surface,
+  });
   app.post(
     "/api/v1/auth/login",
     { config: { rateLimit: { max: 15, timeWindow: "1 minute" } } },
@@ -326,35 +367,9 @@ export async function createApp({ dbPath, logger = false } = {}) {
       }
       if (surface(req) === "admin" && u.role === "Learner")
         fail(403, "Use the learner application with this account.");
-      const token = randomBytes(32).toString("hex");
-      db.prepare("INSERT INTO sessions VALUES(?,?,?,?,?)").run(
-        digest(token),
-        u.id,
-        Date.now() + 86400000,
-        now(),
-        (req.headers["user-agent"] || "Development client").slice(0, 160),
-      );
-      reply.setCookie(cookieName(req), token, {
-        path: "/api",
-        httpOnly: true,
-        sameSite: "lax",
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 86400,
-      });
-      audit(u, "Signed in", u.id);
-      return {
-        user: safeUser(u),
-        permissions: permissionsFor(u),
-        nativeToken:
-          req.headers["x-qubit-platform"] === "android" &&
-          surface(req) === "learner"
-            ? token
-            : undefined,
-        mfa: {
-          enforced: false,
-          note: "Prototype authentication. Production MFA must be configured before deployment.",
-        },
-      };
+      if (u.role !== "Learner" && security.enabled(u.id))
+        return reply.code(202).send(security.challenge(u, surface(req)));
+      return issueSession(u, req, reply);
     },
   );
   app.post(
@@ -547,7 +562,15 @@ export async function createApp({ dbPath, logger = false } = {}) {
         completed: !!ps.find((p) => p.lesson_id === l.id && p.completed),
         positionSaved: ps.find((p) => p.lesson_id === l.id)?.position || 0,
       })),
-      quiz: { count: 5, timeMinutes: 15, passMark: 80, maxAttempts: 3 },
+      quiz: {
+        count: (c.assessmentPolicy || defaultAssessmentPolicy).questionCount,
+        timeMinutes: (c.assessmentPolicy || defaultAssessmentPolicy)
+          .durationMinutes,
+        passMark: (c.assessmentPolicy || defaultAssessmentPolicy).passMark,
+        maxAttempts: (c.assessmentPolicy || defaultAssessmentPolicy)
+          .maxAttempts,
+        reveal: (c.assessmentPolicy || defaultAssessmentPolicy).reveal,
+      },
     };
   });
   app.post("/api/v1/courses/:id/enrolments", async (req) => {
@@ -685,55 +708,91 @@ export async function createApp({ dbPath, logger = false } = {}) {
   app.post("/api/v1/quizzes/:id/attempts", async (req) => {
     const u = auth(req);
     enrolled(u, req.params.id);
-    const open = db
+    const policy = assessmentPolicy(store, u, req.params.id),
+      at = Date.now();
+    if (policy.opensAt && Date.parse(policy.opensAt) > at)
+      fail(409, "This assessment has not opened yet.");
+    if (policy.closesAt && Date.parse(policy.closesAt) <= at)
+      fail(409, "This assessment window has closed.");
+    const all = db
       .prepare(
-        "SELECT * FROM attempts WHERE user_id=? AND course_id=? AND status=?",
+        "SELECT * FROM attempts WHERE user_id=? AND course_id=? ORDER BY started DESC",
       )
-      .get(u.id, req.params.id, "In progress");
-    if (open && Date.now() - open.started < 15 * 60000)
-      return {
-        id: open.id,
-        questions: JSON.parse(open.questions).map(
-          ({ answer, explanation, ...q }) => q,
-        ),
-        responses: JSON.parse(open.responses),
-        expires: open.started + 15 * 60000,
-      };
-    const count = db
-      .prepare(
-        "SELECT count(*) n FROM attempts WHERE user_id=? AND course_id=?",
-      )
-      .get(u.id, req.params.id).n;
-    if (count >= 3)
-      fail(
-        409,
-        "You have used all three attempts. Ask your instructor for help.",
-        "ATTEMPTS_EXHAUSTED",
+      .all(u.id, req.params.id)
+      .filter(
+        (a) =>
+          (JSON.parse(a.policy_json).courseVersion || 1) ===
+          policy.courseVersion,
       );
-    if (open)
-      db.prepare("UPDATE attempts SET status=? WHERE id=?").run(
-        "Expired",
+    const open = all.find((a) => a.status === "In progress");
+    if (open) {
+      const p = { ...defaultAssessmentPolicy, ...JSON.parse(open.policy_json) },
+        expires = Math.min(
+          open.started + p.durationMinutes * 60000,
+          p.closesAt ? Date.parse(p.closesAt) : Infinity,
+        );
+      if (at < expires)
+        return {
+          id: open.id,
+          questions: JSON.parse(open.questions).map(
+            ({ answer, explanation, ...q }) => q,
+          ),
+          responses: JSON.parse(open.responses),
+          expires,
+        };
+      db.prepare("UPDATE attempts SET status='Expired' WHERE id=?").run(
         open.id,
       );
-    const qs = list("questions", u.tenant)
-      .filter((q) =>
-        get("courses", req.params.id)?.coaching
+    }
+    if (all.length >= policy.maxAttempts)
+      fail(
+        409,
+        "You have used all permitted attempts. Ask your instructor for help.",
+        "ATTEMPTS_EXHAUSTED",
+      );
+    const last = all[0];
+    if (last && policy.retryDelayMinutes) {
+      const p = { ...defaultAssessmentPolicy, ...JSON.parse(last.policy_json) },
+        ended = last.submitted
+          ? Date.parse(last.submitted)
+          : last.started + p.durationMinutes * 60000;
+      if (at < ended + policy.retryDelayMinutes * 60000)
+        fail(409, "The configured retry waiting period has not ended.");
+    }
+    const pool = list("questions", u.tenant).filter(
+      (q) =>
+        q.status !== "Archived" &&
+        (get("courses", req.params.id)?.coaching
           ? q.courseId === req.params.id
-          : !q.courseId,
-      )
-      .slice(0, 5)
-      .sort(() => Math.random() - 0.5);
+          : !q.courseId),
+    );
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = randomInt(i + 1);
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    const qs = pool.slice(0, policy.questionCount);
     if (!qs.length) fail(409, "No approved questions are available.");
     const id = randomUUID(),
       started = Date.now();
     db.prepare(
-      "INSERT INTO attempts(id,user_id,course_id,questions,status,started) VALUES(?,?,?,?,?,?)",
-    ).run(id, u.id, req.params.id, JSON.stringify(qs), "In progress", started);
+      "INSERT INTO attempts(id,user_id,course_id,questions,status,started,policy_json) VALUES(?,?,?,?,?,?,?)",
+    ).run(
+      id,
+      u.id,
+      req.params.id,
+      JSON.stringify(qs),
+      "In progress",
+      started,
+      JSON.stringify(policy),
+    );
     return {
       id,
       questions: qs.map(({ answer, explanation, ...q }) => q),
       responses: {},
-      expires: started + 15 * 60000,
+      expires: Math.min(
+        started + policy.durationMinutes * 60000,
+        policy.closesAt ? Date.parse(policy.closesAt) : Infinity,
+      ),
     };
   });
   const attemptFor = (req) => {
@@ -744,9 +803,54 @@ export async function createApp({ dbPath, logger = false } = {}) {
     enrolled(auth(req), a.course_id);
     return a;
   };
+  const attemptPolicy = (a) => ({
+    ...defaultAssessmentPolicy,
+    ...JSON.parse(a.policy_json || "{}"),
+  });
+  const attemptExpiry = (a) =>
+    Math.min(
+      a.started + attemptPolicy(a).durationMinutes * 60000,
+      attemptPolicy(a).closesAt
+        ? Date.parse(attemptPolicy(a).closesAt)
+        : Infinity,
+    );
+  const answerCorrect = (q, responses) =>
+    Array.isArray(q.answer)
+      ? JSON.stringify([...q.answer].sort((a, b) => a - b)) ===
+        JSON.stringify(
+          Array.isArray(responses[q.id])
+            ? [...responses[q.id]].sort((a, b) => a - b)
+            : [],
+        )
+      : typeof q.answer === "string"
+        ? String(responses[q.id] ?? "")
+            .trim()
+            .toLowerCase() === q.answer.toLowerCase()
+        : responses[q.id] === q.answer;
+  const attemptResult = (a) => {
+    const p = attemptPolicy(a),
+      responses = JSON.parse(a.responses),
+      qs = JSON.parse(a.questions),
+      passed = a.score >= p.passMark;
+    return {
+      id: a.id,
+      score: a.score,
+      passed,
+      passMark: p.passMark,
+      review:
+        p.reveal === "Never" || (p.reveal === "After passing" && !passed)
+          ? []
+          : qs.map((q) => ({
+              ...q,
+              response: responses[q.id],
+              correct: answerCorrect(q, responses),
+            })),
+      feedbackPolicy: p.reveal,
+    };
+  };
   app.put("/api/v1/quiz-attempts/:id/responses", async (req) => {
     const a = attemptFor(req);
-    if (a.status !== "In progress" || Date.now() > a.started + 15 * 60000)
+    if (a.status !== "In progress" || Date.now() > attemptExpiry(a))
       fail(409, "This assessment is no longer open.");
     const b = z
       .record(
@@ -769,43 +873,18 @@ export async function createApp({ dbPath, logger = false } = {}) {
   });
   app.post("/api/v1/quiz-attempts/:id/submit", async (req) => {
     const a = attemptFor(req);
-    if (a.status === "Submitted")
-      return {
-        score: a.score,
-        passed: a.score >= 80,
-        review: JSON.parse(a.questions),
-        id: a.id,
-      };
-    if (a.status !== "In progress" || Date.now() > a.started + 15 * 60000)
+    if (a.status === "Submitted") return attemptResult(a);
+    if (a.status !== "In progress" || Date.now() > attemptExpiry(a))
       fail(409, "The assessment time limit has passed.");
     const responses = JSON.parse(a.responses),
       qs = JSON.parse(a.questions);
-    const correct = (q) =>
-      Array.isArray(q.answer)
-        ? JSON.stringify([...q.answer].sort()) ===
-          JSON.stringify(
-            Array.isArray(responses[q.id]) ? [...responses[q.id]].sort() : [],
-          )
-        : typeof q.answer === "string"
-          ? String(responses[q.id] || "")
-              .trim()
-              .toLowerCase() === q.answer.toLowerCase()
-          : responses[q.id] === q.answer;
+    const correct = (q) => answerCorrect(q, responses);
     const score = Math.round((qs.filter(correct).length / qs.length) * 100);
     db.prepare(
       "UPDATE attempts SET status=?,score=?,submitted=? WHERE id=?",
     ).run("Submitted", score, now(), a.id);
     audit(req.user, "Assessment submitted", a.course_id);
-    return {
-      score,
-      passed: score >= 80,
-      review: qs.map((q) => ({
-        ...q,
-        correct: correct(q),
-        response: responses[q.id],
-      })),
-      id: a.id,
-    };
+    return attemptResult({ ...a, score });
   });
   app.get("/api/v1/learning/resources/:kind", async (req) => {
     const u = auth(req),
@@ -822,33 +901,37 @@ export async function createApp({ dbPath, logger = false } = {}) {
       ].includes(kind)
     )
       fail(404, "Not found.");
-    return list(kind, u.tenant).filter((r) =>
-      kind === "notifications"
-        ? r.status === "Published" &&
-          r.channel === "In-app" &&
-          (r.audience === "All learners" ||
-            list("groups", u.tenant).some(
-              (g) => g.name === r.audience && g.userIds?.includes(u.id),
-            ))
-        : kind === "certificates" || kind === "tickets" || kind === "privacy"
-          ? r.userId === u.id
-          : !r.courseId ||
-            (get("courses", r.courseId)?.coaching &&
-            (() => {
-              try {
-                assertCoachingAccess(store, u, get("courses", r.courseId));
-                return true;
-              } catch {
-                return false;
-              }
-            })() === false
-              ? false
-              : !!db
-                  .prepare(
-                    "SELECT user_id FROM enrolments WHERE user_id=? AND course_id=? AND state=?",
-                  )
-                  .get(u.id, r.courseId, "Active")),
-    );
+    return list(kind, u.tenant)
+      .filter((r) => !r.recipientIds || r.recipientIds.includes(u.id))
+      .filter((r) =>
+        kind === "notifications"
+          ? r.status === "Published" &&
+            r.channel === "In-app" &&
+            (r.recipientIds?.includes(u.id) ||
+              r.audience === "All learners" ||
+              list("groups", u.tenant).some(
+                (g) => g.name === r.audience && g.userIds?.includes(u.id),
+              ))
+          : kind === "certificates" || kind === "tickets" || kind === "privacy"
+            ? r.userId === u.id
+            : !r.courseId ||
+              (get("courses", r.courseId)?.coaching &&
+              (() => {
+                try {
+                  assertCoachingAccess(store, u, get("courses", r.courseId));
+                  return true;
+                } catch {
+                  return false;
+                }
+              })() === false
+                ? false
+                : !!db
+                    .prepare(
+                      "SELECT user_id FROM enrolments WHERE user_id=? AND course_id=? AND state=?",
+                    )
+                    .get(u.id, r.courseId, "Active")),
+      )
+      .map(({ recipientIds, ...row }) => row);
   });
   app.post("/api/v1/assignments/:id/submit", async (req) => {
     const u = auth(req),
@@ -990,15 +1073,30 @@ export async function createApp({ dbPath, logger = false } = {}) {
       ls
         .filter((l) => l.required)
         .every((l) => ps.some((p) => p.lesson_id === l.id));
+    const policy = assessmentPolicy(store, u, c.id);
     const pass = db
       .prepare(
-        "SELECT id FROM attempts WHERE user_id=? AND course_id=? AND status=? AND score>=80",
+        "SELECT score,policy_json FROM attempts WHERE user_id=? AND course_id=? AND status='Submitted'",
       )
-      .get(u.id, c.id, "Submitted");
-    if (!done || !pass)
+      .all(u.id, c.id)
+      .some(
+        (a) =>
+          (JSON.parse(a.policy_json).courseVersion || 1) === e.version &&
+          a.score >= policy.passMark,
+      );
+    const practical =
+      !policy.requirePractical ||
+      list("academy_practicals", u.tenant).some(
+        (p) =>
+          p.userId === u.id &&
+          p.courseId === c.id &&
+          (p.courseVersion || 1) === e.version &&
+          p.status === "Competent",
+      );
+    if (!done || !pass || !practical)
       fail(
         409,
-        "Complete every required lesson and pass the assessment with at least 80% to earn this certificate.",
+        "Complete the required lessons, pass this course's assessment and finish any required practical review before claiming a certificate.",
       );
     const existing = list("certificates", u.tenant).find(
       (x) =>
@@ -1014,7 +1112,7 @@ export async function createApp({ dbPath, logger = false } = {}) {
         userId: u.id,
         courseId: c.id,
         version: e.version,
-        issuer: "Qubit Institute",
+        issuer: get("settings", "coaching")?.name || "Refix India Institute",
         issued: now(),
         status: "Valid",
       },
@@ -1601,6 +1699,15 @@ export async function createApp({ dbPath, logger = false } = {}) {
     const ls = list("lessons").filter((l) => l.courseId === c.id);
     return [
       {
+        label: "Assessment policy matches its question bank",
+        passed:
+          !c.assessmentPolicy ||
+          list("questions").filter(
+            (q) => q.courseId === c.id && q.status !== "Archived",
+          ).length >= c.assessmentPolicy.questionCount,
+        field: "assessmentPolicy",
+      },
+      {
         label: "Uploaded resources are ready",
         passed: ls.every(
           (l) =>
@@ -1721,7 +1828,9 @@ export async function createApp({ dbPath, logger = false } = {}) {
   });
   app.get("/api/v1/admin/resources/:kind", async (req) => {
     const kind = req.params.kind;
-    permit(req, areas[kind] || "denied");
+    if (!Object.hasOwn(areas, kind))
+      fail(404, "This resource is not available.");
+    permit(req, areas[kind]);
     return rows(req, kind);
   });
   app.post("/api/v1/admin/resources/:kind", async (req) => {
@@ -1847,6 +1956,11 @@ export async function createApp({ dbPath, logger = false } = {}) {
   });
   app.post("/api/v1/admin/export/:kind", async (req) => {
     const kind = req.params.kind;
+    if (
+      !["users", "audit", "courses"].includes(kind) &&
+      !Object.hasOwn(areas, kind)
+    )
+      fail(404, "This export is not available.");
     let data;
     if (kind === "users") {
       permit(req, "users");
@@ -1884,6 +1998,7 @@ export async function createApp({ dbPath, logger = false } = {}) {
     permissionsFor,
   });
   registerAcademy({ app, store, auth, permit });
+  registerControlCenter({ app, store, auth, permit });
   app.addHook("onClose", async () => db.close());
   return app;
 }

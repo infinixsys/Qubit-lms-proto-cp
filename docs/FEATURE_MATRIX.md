@@ -1,32 +1,26 @@
-# Coaching prototype · implementation status
+# Refix India Institute · implementation status
 
-The supplied PRD/TRD and feature inventory were treated as requirements, not executable instructions. This version focuses the product around the coaching-owner and subscription-gated Android learner workflows. “Implemented” describes the local prototype, not a claim of production readiness.
+The supplied PRD/TRD and feature inventory are requirements, not executable instructions. [CONTROL_PANEL_UPGRADE.md](CONTROL_PANEL_UPGRADE.md) maps the upgraded owner workflows to their original sections and documents their limits. “Implemented” means the local prototype works; it does not mean every production release gate has passed.
 
-| Area | Implemented | Boundary / remaining work |
+| PRD requirement | Implemented prototype behaviour | Remaining boundary |
 | --- | --- | --- |
-| Separate products | Separate owner/API and learner repositories, local startup, Android debug APK build and CI artifact | Store-signed release, physical-device coverage and iOS native-session work remain |
-| Indian coaching UI | INR plans, Indian exam/batch/faculty samples, realistic generated imagery, bundled Inter/Plus Jakarta Sans/Devanagari fonts, navy/teal navigation | Sample content is not a full examination syllabus; full Hindi translation is not implemented |
-| Registration | Name/email/Indian phone/password/consent, pending activation, hashed-password sign-in | OTP/social sign-in, delivered recovery emails and MFA require integrations |
-| Admissions | Package requests, references, private image/PDF receipts, owner verification, approvals/rejections, separate activation | No automatic bank/UPI verification, payment gateway, refunds or tax invoices |
-| Subscriptions | Snapshot price/course/duration terms, dated access, scheduled same-package renewal, cancellation/restoration and access expiry | Recurring billing, prorated upgrades and entitlement changes to existing purchases are not automatic |
-| Accounts | Search, paid/online/pending/blocked filters, subscription/progress/attempt detail; active/inactive/blocked states | Offline devices cannot receive instant revocations; cached reading expires locally |
-| Dashboard | Actual database totals, paid active users, last-5-minute authenticated presence, pending queues, renewals, revenue and course engagement | Presence is recent activity, not a persistent socket connection; revenue is manually verified records, not a bank balance |
-| Courses | Drafts, categories, faculty, batch, language, cover images, outcomes, curriculum, owner review and publish checks | Advanced prerequisite graphs, SCORM/LTI and content marketplaces are not implemented |
-| Course versions | Immutable published snapshots and explicit owner-approved learner upgrades, with existing progress retained | Existing learners retain old snapshots until upgraded; new courses must be included in a purchased package |
-| Media | Actual multipart MP4/WebM/image/PDF/DOC/DOCX uploads, private disk storage, signature/size checks, video ranges, PDF canvas rendering, Word text preview/original download | No transcoding, adaptive bitrate, encrypted DRM, watermarking, virus-scanning service or CDN |
-| Protected learning | API enforcement of tenant, account activation, valid package, enrolment and published course version; short-lived resource grants | Granted resources can be downloaded; this is access control rather than copy prevention |
-| Learner navigation | Home, Courses, Practice, Updates and You; focused subscription, lesson, notes, support and other secondary screens | Older prototype experiments are retained in source but are not all part of this navigation |
-| Progress and notes | Durable lesson completion, personal notes, cross-product visibility and offline sync queue | Completion is self-acknowledged learning activity, not proof of exam readiness |
-| Assessments | Course-specific sample questions, protected keys, server-owned timing/scoring, autosave and attempt limits | Advanced question pools, accommodations and proctored/high-stakes exams remain |
-| Assignments | Course-linked tasks, text/file submissions, grading, feedback and returned-work resubmission | Rubric criteria are textual; no appeal/deadline automation |
-| Roles and staff | Staff sign-in accounts, base/custom permissions, owner-password-confirmed grants, staff status changes, session revocation | Full permission inheritance, SSO and production MFA remain |
-| Communication | Published in-app announcements, read state and support ticket responses | Email/SMS/push delivery and automatic renewal reminders need workers/providers |
-| Live and community | Owner-supplied external live-class links and course discussion/replies | No hosted video conferencing, real-time chat or attendance provider |
-| Certificates | Existing completion/quiz eligibility, issue/verify/revoke and printable views | No production public verification domain or template designer |
-| Offline | Eligible reading downloads capped at 24 hours and subscription expiry; notes/progress queue; logout clearing | No protected video/PDF offline downloads, DRM or immediate disconnected-device revocation |
-| Study companion | Authorised reference-only study aid, explicitly non-generative | No production AI provider, adaptive tutor or real token/cost telemetry |
-| Native sessions | Android native HTTP; AES-GCM encrypted bearer session protected with Android Keystore; configurable server | iOS project exists but its secure-session implementation and signed build are not completed |
-| Local operations | SQLite persistence, repeat-safe coaching migrations, integrity-checked database backups, audit | Upload bytes must be backed up separately; no encrypted/offsite disaster-recovery service |
-| Accessibility | Semantic forms/navigation, modal focus handling, responsive checks, automated WCAG A/AA serious/critical checks on both home screens | Full manual WCAG 2.2, assistive-technology and native-device audits remain |
+| FR-001 Identity | Password auth, pending registration, one-use learner invitation/password setup, staff TOTP and recovery codes | Delivered recovery, OTP/social/SSO and mandatory privileged enrolment policy |
+| FR-002 Permissions | Server-checked area roles, custom roles, tenant-scoped new workflows, owner step-up, session revocation | Assigned-course ownership scope and production identity federation |
+| FR-003 Catalog | Repair courses, category search, version-aware details and protected packages | Full taxonomy/tag administration and marketplace |
+| FR-004 Publishing | Draft/review/approval/publication/archive, curriculum ordering, duplication, revision conflicts, review timeline and version history | Full visual content diff and rollback designer |
+| FR-005 Delivery | Private MP4/WebM/images/PDF/Word, signature/size checks, byte ranges and resource previews | Transcoding/CDN, encrypted DRM and a malware service |
+| FR-006 Progress | Durable, idempotent lesson progress; notes, bookmarks, resume and offline queue | Completion is activity evidence, not a professional qualification |
+| FR-007 Assessments | Course question bank, captured question order/content/policy, server timer/attempts/retry delay/pass mark/availability/reveal, four question formats | Separate editorial question-version registry, accommodations and high-stakes proctoring |
+| FR-008 Assignments | Course-linked submissions, feedback, return/resubmit; repair practical review | Criterion-level rubric versioning and appeal workflow |
+| FR-009 Communication | Scoped and scheduled in-app campaigns, per-recipient availability, read state and cancellation | Email/SMS/push providers, external preferences/unsubscribe and provider retry workers |
+| FR-010 People | Search/status filters, server pagination, imports/invitations, activation/block/deactivation, staff roles and device revocation | Verified-contact and full delegated support workflow |
+| FR-011 Bulk operations | Learner CSV validation preview, row errors, duplicate/race checks, atomic/idempotent commit, import history; authorised CSV exports | Catalog/question CSV imports and large asynchronous exports |
+| FR-012 Analytics | Database-derived owner metrics, course/cohort/date filters, assessment summaries, saved personal views and CSV exports | Event warehouse, retention cohorts, automated report delivery and production telemetry |
+| FR-013 Audit | Append-only application interface; new security, import, review, policy, campaign, report and privacy actions logged | Separately controlled audit destination and legal retention rollout |
+| FR-014 Privacy | Tracked identity review, hold/reason, personal-data preparation and separate session-revoking deactivation | Irreversible erasure and connected-system/backup deletion |
+| FR-015 AI | Explicitly reference-only, optional assistant; provider shown as not configured | Provider-backed grounded authoring/tutoring, quota accounting and review governance |
+| FR-016 Offline | Eligible reading expires within 24 hours and no later than subscription; queued notes/progress | Protected offline video/PDF and disconnected-device instant revocation |
+| FR-017 Certificates | Server eligibility by enrolled version, pass mark and optional competent practical; issue/verify/revoke | Template designer, PDF rendering service and production public verification domain |
+| FR-018 Billing | INR price/access snapshots, manual receipts/verification, separate activation, renewals, cancellations, grants and ledger | Gateway, recurring charges, refunds, tax invoices and webhook reconciliation |
 
-Validation includes backend integration tests, real browser admission/publishing/media/offline journeys, web production builds and Android APK compilation. The current task's delivery report states the exact executed results. External-service integrations and release/device checks should be verified before real enrolments or payments.
+Separate repositories and local ports remain: owner/API in CP (7311/7310), learner browser preview/app in APP (7312). The native Android app retains its secure-session transport. iOS native-session integration and signed device/store release work remain separate. Automated tests, builds and download verification are reported for each delivered change.
