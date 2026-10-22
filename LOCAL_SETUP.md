@@ -64,7 +64,7 @@ These are public prototype credentials and synthetic records. Register a new lea
 
 ## Install the Android learner APK
 
-Use the delivered **Qubit-Coaching-debug.apk**, or build one as below. Transfer it to your Android phone and allow installation from the app used to open the APK. The APK has Android API 23 as its install minimum and targets API 35. Use an up-to-date Android System WebView; testing on your target phone is still required. The local test APK permits HTTP to your development computer; it is not a Play Store release.
+Download [Qubit-Coaching-debug.apk](https://github.com/infinixsys/Qubit-lms-proto-app/releases/download/android-prototype-2026-10-22-r2/Qubit-Coaching-debug.apk) from the [GitHub release](https://github.com/infinixsys/Qubit-lms-proto-app/releases/tag/android-prototype-2026-10-22-r2), or build one as below. Transfer it to your Android phone and allow installation from the app used to open the APK. The APK has Android API 23 as its install minimum and targets API 35. Use an up-to-date Android System WebView; testing on your target phone is still required. The local test APK permits HTTP to your development computer; it is not a Play Store release.
 
 1. Start `npm run dev:all` on your computer.
 2. Connect your phone and computer to the same Wi-Fi.
