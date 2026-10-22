@@ -386,13 +386,10 @@
   font-size: 11px;
   overflow-wrap: anywhere;
 }
-.owner-sidebar nav {
-  min-height: 0;
-  overflow-y: auto;
-  flex: 1;
-}
 .owner-sidebar .sidebar-bottom {
   flex-shrink: 0;
+  padding-top: 0;
+  border-top: 0;
 }
 .owner-sidebar .owner-help {
   display: none;

@@ -736,6 +736,9 @@ legend {
   position: fixed;
   inset: 0 auto 0 0;
   width: 236px;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   background: #12243b;
   color: #b5c2d3;
   display: flex;
@@ -743,8 +746,17 @@ legend {
   padding: 30px 18px 0;
   z-index: 35;
 }
-.owner-sidebar > .brand,
-.owner-sidebar > a {
+.owner-sidebar-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #607893 transparent;
+  padding-bottom: 4px;
+}
+.owner-sidebar-scroll > .brand,
+.owner-sidebar-scroll > a {
   color: #fff;
   padding-left: 13px;
   display: block;
@@ -780,6 +792,7 @@ legend {
   font-size: 10px;
 }
 .nav-label {
+  display: block;
   font-size: 8px;
   letter-spacing: 1.2px;
   color: #8e9eb4;

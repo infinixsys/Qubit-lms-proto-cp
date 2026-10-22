@@ -234,32 +234,34 @@ export default function App() {
         Skip to content
       </a>
       <aside className="owner-sidebar">
-        <Link to="/" aria-label="Refix institute overview">
-          <Brand />
-        </Link>
-        <div className="workspace-label">
-          <span className="workspace-logo">RI</span>
-          <div>
-            Refix India Institute<small>Owner workspace</small>
+        <div className="owner-sidebar-scroll">
+          <Link to="/" aria-label="Refix institute overview">
+            <Brand />
+          </Link>
+          <div className="workspace-label">
+            <span className="workspace-logo">RI</span>
+            <div>
+              Refix India Institute<small>Owner workspace</small>
+            </div>
+            <Icon name="ChevronsUpDown" size={15} />
           </div>
-          <Icon name="ChevronsUpDown" size={15} />
+          <span className="nav-label">MANAGE YOUR INSTITUTE</span>
+          <nav aria-label="Main navigation">
+            {navigation
+              .filter((n) => can(n[3]))
+              .map(([path, label, icon]) => (
+                <NavLink
+                  key={path}
+                  to={path}
+                  end={path === "/"}
+                  onClick={() => setMenu(false)}
+                >
+                  <Icon name={icon} />
+                  {label}
+                </NavLink>
+              ))}
+          </nav>
         </div>
-        <span className="nav-label">MANAGE YOUR INSTITUTE</span>
-        <nav aria-label="Main navigation">
-          {navigation
-            .filter((n) => can(n[3]))
-            .map(([path, label, icon]) => (
-              <NavLink
-                key={path}
-                to={path}
-                end={path === "/"}
-                onClick={() => setMenu(false)}
-              >
-                <Icon name={icon} />
-                {label}
-              </NavLink>
-            ))}
-        </nav>
         <div className="sidebar-bottom">
           <div className="owner-help">
             <Icon name="HeartHandshake" />
