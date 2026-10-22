@@ -1,141 +1,123 @@
-# Run Qubit LMS on your computer
+# Run Qubit Coaching locally
 
-The learner app and control panel are separate repositories. The shared API lives in `Qubit-lms-proto-cp/server`; no third repository or external database is needed for this prototype.
+The owner dashboard and shared API live in **Qubit-lms-proto-cp**. The Android learner app lives in **Qubit-lms-proto-app**. No separate backend repository or external database is required for this prototype.
 
-## 1. Prerequisites
+## Update or clone both repositories
 
-Install Git and **Node.js 24** with npm. Both repositories pin Node 24.19.0 in `.nvmrc`. On macOS/Linux with nvm you can run `nvm install` and `nvm use` inside a checkout. On Windows, install Node 24 with the Node installer or your Node version manager.
+Keep the checkouts next to each other:
 
-Verify:
-
-```sh
-node --version
-npm --version
-git --version
+```text
+D:\Qubit-products\qubit-lms\
+  Qubit-lms-proto-cp\
+  Qubit-lms-proto-app\
 ```
 
-## 2. Clone both repositories next to each other
+For existing checkouts, commit/stash your own changes first, then run from the parent folder:
 
-Run from any folder where you keep projects:
+```powershell
+git -C Qubit-lms-proto-cp pull --ff-only origin main
+git -C Qubit-lms-proto-app pull --ff-only origin main
+```
 
-```sh
-mkdir qubit-lms
-cd qubit-lms
+For a new setup:
+
+```powershell
 git clone https://github.com/infinixsys/Qubit-lms-proto-cp.git
 git clone https://github.com/infinixsys/Qubit-lms-proto-app.git
 ```
 
-Authenticate with your GitHub account if these repositories are private. Keep the checkout names unchanged because the combined startup script expects adjacent folders:
+Install **Node.js 24** and Git. Verify `node --version` shows v24.x. The API uses Node's built-in SQLite; it needs no database installer.
 
-```text
-qubit-lms/
-  Qubit-lms-proto-cp/
-  Qubit-lms-proto-app/
-```
+## Install and start
 
-## If the cloud push is blocked
+From the parent `qubit-lms` folder:
 
-The chat can provide Git bundles containing the complete committed prototypes. Download both bundles into the same folder, then run:
-
-```sh
-git clone -b work Qubit-lms-proto-cp.bundle Qubit-lms-proto-cp
-git clone -b work Qubit-lms-proto-app.bundle Qubit-lms-proto-app
-git -C Qubit-lms-proto-cp remote set-url origin https://github.com/infinixsys/Qubit-lms-proto-cp.git
-git -C Qubit-lms-proto-app remote set-url origin https://github.com/infinixsys/Qubit-lms-proto-app.git
-```
-
-Continue with installation below. The bundles preserve Git history. Once your GitHub authentication has write access, you can publish these commits from your computer with:
-
-```sh
-git -C Qubit-lms-proto-cp push origin HEAD:main
-git -C Qubit-lms-proto-app push origin HEAD:main
-```
-
-Use ordinary pushes; do not force-push if the remote has newer work. Until a push succeeds, cloning GitHub alone will not contain these prototype commits.
-
-## 3. Install dependencies
-
-From the `qubit-lms` parent folder:
-
-```sh
+```powershell
 npm ci --prefix Qubit-lms-proto-cp
 npm ci --prefix Qubit-lms-proto-app
-```
-
-## 4. Start both products and the API
-
-```sh
 cd Qubit-lms-proto-cp
 npm run dev:all
 ```
 
-Keep this terminal running. Open these addresses **on your computer**:
+Open these addresses **on your own computer**:
 
-| Product | Local address |
+| Component | Local address |
 | --- | --- |
-| Control panel | http://localhost:7311 |
-| Learner app | http://localhost:7312 |
+| Owner dashboard | http://localhost:7311 |
+| Learner browser preview | http://localhost:7312 |
 | API health | http://localhost:7310/api/v1/health |
 
-Use `localhost` consistently and leave ports 7310, 7311 and 7312 free. The browser apps proxy `/api` to the local backend automatically. No `.env` file, API keys, Docker, PostgreSQL or paid services are required for this demo. Stop the servers with Ctrl+C. If a configured port is occupied, startup reports the conflict and exits instead of silently choosing another port.
+Stop all three processes with Ctrl+C. Ports are **7310 / 7311 / 7312**, separate from common 3000 / 5173 ports. The API binds to `0.0.0.0` for phone testing. The corrected database path uses `fileURLToPath`, including on Windows drives and paths containing spaces; no `D:\D:\...` duplication occurs.
 
-On Windows, these Git/npm commands also work in PowerShell. The optional `scripts/setup.sh` helper requires Bash (Git Bash, WSL, macOS or Linux).
+Development-only accounts, password **QubitDemo2026!**:
 
-## 5. Open the demos
+| Account | Purpose |
+| --- | --- |
+| admin@qubit.demo | Coaching owner |
+| learner@qubit.demo | Activated learner with approved All Access package |
+| student9@qubit.demo | Learner awaiting activation / payment review |
+| olivia@qubit.demo | Faculty demo (Dr. Ananya Rao) |
+| support@qubit.demo | Support demo |
+| finance@qubit.demo | Finance demo |
 
-- Control panel: choose **Enter demo workspace**. You can also explore the narrower roles.
-- Learner app: choose **Explore the learner demo**, or register a synthetic account.
-- To inspect the mobile layout, open browser Developer Tools and enable the device toolbar (for example, a 390px phone viewport). This previews the responsive UI; it is not a native device test.
+These are public prototype credentials and synthetic records. Register a new learner to test the full approval journey.
 
-Manual demo sign-in:
+## Install the Android learner APK
 
-| Product | Email | Password |
-| --- | --- | --- |
-| Control panel | admin@qubit.demo | QubitDemo2026! |
-| Learner app | learner@qubit.demo | QubitDemo2026! |
+Use the delivered **Qubit-Coaching-debug.apk**, or build one as below. Transfer it to your Android phone and allow installation from the app used to open the APK. The APK has Android API 23 as its install minimum and targets API 35. Use an up-to-date Android System WebView; testing on your target phone is still required. The local test APK permits HTTP to your development computer; it is not a Play Store release.
 
-These are public development credentials, not production accounts. Use synthetic information. New learner submissions appear in the control panel's Review workspace. Published in-app announcements and support replies appear in the learner app.
+1. Start `npm run dev:all` on your computer.
+2. Connect your phone and computer to the same Wi-Fi.
+3. In PowerShell run `ipconfig`; find the Wi-Fi adapter's **IPv4 Address**, for example `192.168.1.4`. Avoid virtual/VPN adapter addresses.
+4. Open the APK. On **Connect to your coaching**, enter `http://192.168.1.4:7310` using your actual address.
+5. Tap **Connect & continue**, then sign in or create an account.
 
-## 6. Optional verification
+`localhost` on a phone means the phone, not your computer. Android Emulator uses `http://10.0.2.2:7310`. If connection fails, open `http://YOUR-PC-IP:7310/api/v1/health` in the phone browser first; allow Node/port 7310 on the Windows **private network** firewall if necessary and check Wi-Fi client isolation. The dashboard can remain open on the computer.
 
-From the control-panel checkout:
+The server address is configurable in the APK; it is not hardcoded to a cloud machine. **Change coaching server** is available on the sign-in screen. Android sessions use the native HTTP transport and an AES-GCM encrypted session protected by Android Keystore. Account blocking and deactivation revoke server sessions and future protected media requests.
 
-```sh
-npm test
-npm run build
-npm run build --prefix ../Qubit-lms-proto-app
+## Build an APK yourself on Windows
+
+Install **Android Studio**, **JDK 21**, and these Android SDK components through Android Studio's SDK Manager: Android SDK Platform 35, Build-Tools 34.0.0 and 35.0.0, Platform-Tools, and Command-line Tools. Accept SDK licences.
+
+From the app checkout in PowerShell, adjust paths for your installation:
+
+```powershell
+$env:JAVA_HOME = 'C:\Program Files\Java\jdk-21'
+$env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
+npm ci
+npm run android:apk
 ```
 
-To run the cross-product browser suite, first install its browser if your computer does not already have the supported system Chromium:
+`JAVA_HOME` must point to a **JDK** containing `bin\javac.exe`, not a JRE. Android Studio's bundled JDK is also suitable if it is version 21. The script builds web assets, syncs **Android only**, and runs Gradle. First build downloads dependencies and may take several minutes. Output:
 
-```sh
-npx playwright install chromium
-npm run test:e2e
+```text
+android\app\build\outputs\apk\debug\app-debug.apk
 ```
 
-On Linux, browser system libraries may also be needed: `npx playwright install --with-deps chromium`. Browser tests create synthetic local records. They start/reuse both apps plus a built learner preview on port 7313 for offline-shell testing.
+On macOS/Linux the same npm command runs `./gradlew`. `npm run android:apk:https` builds the debug package with an HTTPS-only server selector. A store release additionally needs your private signing key, an HTTPS deployment and release testing. Never commit signing keys.
 
-## 7. Android and iOS projects
+## Try the coaching workflow
 
-From the learner checkout:
+1. In the learner app, create an account, choose a package, and submit a UPI/bank reference or cash receipt details. A PDF/image receipt is optional. Payment processing is **manual**; the app does not charge or verify UPI with a bank.
+2. Owner → **Admissions** → review payment, confirm collection, approve the subscription. Activate the learner at approval time or separately in **Learners → Manage**.
+3. Only an **Active** account with an **approved package within its access dates** can read course lessons and retrieve private media. Pending, cancelled, expired, inactive and blocked states are enforced by the API.
+4. Owner → **Courses → Create course**, add lessons, confirm content rights, upload video/image/PDF/DOC/DOCX, attach the resources, confirm owner review and publish. Add the published course to an active package under **Packages**.
+5. For updates to a published course, create a new version and publish it. Under **Course details → Update learner access**, explicitly upgrade existing enrolments to that version. Old snapshots remain available until upgraded. Newly added courses must be included in a package; changing a package does not silently rewrite existing purchases.
+6. **Workspace** contains media, staff/permissions, questions, assignments, live-class links, announcements, support and audit. Role changes revoke staff sessions. Only the owner can grant or block staff access.
 
-```sh
-npm run native:sync
-npm run android
-# On macOS with Xcode and CocoaPods:
-npm run ios
-```
+## Data, backups and limits
 
-`native:sync` builds the web application and copies it into the native projects. Android Studio, its SDK, Java 21 and a device/emulator are required to compile Android. iOS compilation requires macOS, Xcode, CocoaPods and Apple provisioning.
+SQLite lives at `Qubit-lms-proto-cp/.data/qubit.sqlite`; uploaded files live at `.data/uploads/`. Both are private local data and ignored by Git. Initial coaching content is added with repeat-safe migrations; existing records are preserved. Photos are generated sample imagery. The short sample lecture and workbook demonstrate delivery, not a complete exam syllabus.
 
-A native device cannot use the browser's Vite API proxy. Set a reachable **HTTPS** API origin with build-time `VITE_API_URL`, configure backend CORS and a native-compatible authentication policy, then rebuild/sync. Native sign-in, signing, biometrics and device behaviour have not been validated. Use the browser demo first; native release preparation is separate work.
+Run `npm run backup` in the CP checkout for a verified SQLite snapshot under `.data/backups/`. Also back up `.data/uploads/`: the database snapshot alone does not contain video/document bytes. A copy of the SQLite file is not an offsite backup service.
 
-## Data, updates and troubleshooting
+Uploads: MP4/WebM up to 300 MB; JPEG/PNG/PDF/DOC/DOCX/TXT up to 25 MB. PDFs render in-app. Word files show a text reading view and offer the original file for download; complex formatting is preserved in the downloaded original. Video codec support depends on the device; H.264 MP4 is the recommended baseline. Live classes use owner-supplied external join links; video conferencing is not hosted by the prototype.
 
-- Local records persist in `Qubit-lms-proto-cp/.data/qubit.sqlite`. Uploads and local backups are also development data; they are excluded from Git.
-- Keep `.data` when updating. Back up the database with `npm run backup` before discarding any records.
-- To update, stop the servers, run `git pull --ff-only origin main` in each checkout, rerun `npm ci` in each, then restart `npm run dev:all` from the CP checkout. Preserve your local source changes before pulling.
-- On Windows, if an older checkout reports `ENOENT` with a duplicated drive letter such as `D:\D:\`, stop Qubit, pull the latest CP `main`, and restart `npm run dev:all`. The default database uses native filesystem paths; you do not need to delete `.data` or change your Node version.
-- If the app cannot connect, verify the API health address and check that all three processes started. Avoid mixing `localhost` and `127.0.0.1` between the two browser windows.
-- Offline reading requires an explicit lesson download. Full offline page reload works in a built production preview; the Vite development server is not an offline runtime.
-- Live AI, payments, email, push, media transcoding and conferencing are not connected. Review `docs/FEATURE_MATRIX.md` for precise prototype boundaries.
+Offline downloads cover eligible **reading text**, for up to 24 hours or the subscription expiry, whichever comes first. Private streamed files are not cached as offline media. A disconnected device cannot receive an immediate server revocation; cached readings expire locally. Reconnect to sync notes and progress.
+
+The prototype uses manual payment approval, local SQLite/storage, public demo users and no configured email/SMS/push provider or production AI provider. Production rollout needs those integrations, HTTPS hosting, proper backups, upload scanning/storage, release signing and device testing. Android is built here; iOS scaffolding remains, but a signed iOS build needs macOS/Xcode and further native-session integration.
+
+## Checks
+
+CP: `npm test`, `npm run build`, `npm run format:check`. App: `npm run build`, `npm run format:check`, `npm run android:apk`. Integration/browser tests live in CP: `npx playwright install chromium` then `npm run test:e2e` with both sibling repositories installed. Browser tests create synthetic local records.

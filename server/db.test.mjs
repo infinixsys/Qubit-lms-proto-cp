@@ -20,7 +20,7 @@ function fixture(t) {
   const cwd = join(root, "another working directory");
   mkdirSync(server, { recursive: true });
   mkdirSync(cwd);
-  for (const name of ["db.mjs", "seed.mjs", "backup.mjs"])
+  for (const name of ["db.mjs", "seed.mjs", "backup.mjs", "coaching-data.mjs"])
     copyFileSync(
       fileURLToPath(new URL(name, import.meta.url)),
       join(server, name),

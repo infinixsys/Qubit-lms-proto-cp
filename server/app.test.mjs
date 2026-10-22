@@ -212,7 +212,10 @@ test("quiz questions do not leak answers; the server owns grading and submission
     404,
   );
   const answers = Object.fromEntries(
-    app.store.list("questions").map((q) => [q.id, q.answer]),
+    app.store
+      .list("questions")
+      .filter((q) => !q.courseId)
+      .map((q) => [q.id, q.answer]),
   );
   assert.equal(
     (await request("PUT", "/quiz-attempts/" + a.id + "/responses", answers))

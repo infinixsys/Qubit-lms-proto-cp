@@ -79,6 +79,7 @@ export const configs: Record<string, ResourceConfig> = {
     singular: "question",
     columns: ["prompt", "type", "reference", "updated"],
     fields: [
+      text("courseId", "Course ID (from the course URL)"),
       area("prompt", "Question"),
       select("type", "Question type", [
         "single",
@@ -119,11 +120,7 @@ export const configs: Record<string, ResourceConfig> = {
     fields: [
       text("title", "Announcement title"),
       area("description", "Message"),
-      select("audience", "Audience", [
-        "All learners",
-        "Design explorers",
-        "Product leaders",
-      ]),
+      select("audience", "Audience", ["All learners", "All learners"]),
       select("channel", "Channel", ["In-app", "Email", "Push"]),
       select("status", "Status", ["Draft", "Published", "Scheduled"]),
       {

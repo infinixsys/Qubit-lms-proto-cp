@@ -1,93 +1,26 @@
-# Qubit · Learning operations control panel
+# Qubit Coaching · Owner dashboard & API
 
-For your own computer, follow [Local setup](LOCAL_SETUP.md).
+A working Indian coaching prototype with a separate Android learner app in [Qubit-lms-proto-app](https://github.com/infinixsys/Qubit-lms-proto-app). The shared Fastify/SQLite API stays in this repository.
 
-A functional development prototype based on `Qubit-LMS_PRD_TRD_v1.0.docx` and the supplied complete feature inventory. The separate learner repository is `infinixsys/Qubit-lms-proto-app`.
+Start with [LOCAL_SETUP.md](LOCAL_SETUP.md) for Windows setup, APK connection, accounts, backups and limitations.
 
-The control panel includes the shared learning API. Both frontends use the same persistent SQLite database, so learner work appears in the administration workspace.
-
-## Run the two products
-
-Requires Node **24.19.0** or a compatible Node 24 release (built-in `node:sqlite`) and npm.
-
-```bash
-# Terminal 1: API (7310) + control panel (7311)
-cd /workspace/Qubit-lms-proto-cp
+```sh
 npm ci
-npm run start
-
-# Terminal 2: separate learner application (7312)
-cd /workspace/Qubit-lms-proto-app
-npm ci
-npm run dev
-```
-
-Use **Enter demo workspace** in the control panel and **Explore the learner demo** in the app. No credentials need configuring for the local prototype. Native mobile instructions are in the learner repository.
-
-Development-only accounts use `QubitDemo2026!`:
-
-| Email | Role |
-| --- | --- |
-| admin@qubit.demo | Super Admin |
-| tenant@qubit.demo | Tenant Admin |
-| olivia@qubit.demo | Instructor |
-| support@qubit.demo | Support |
-| finance@qubit.demo | Finance |
-| learner@qubit.demo | Learner |
-| studio@qubit.demo | Learner in another tenant |
-
-**Use synthetic data only.** These public demo accounts, local storage, and the single-machine database are intentional prototype choices. This is not a deployable production security baseline. MFA and external providers have not been configured.
-
-To launch all three development processes with one command after installation:
-
-```bash
 npm run dev:all
 ```
 
-## What works
+Install the adjacent app's dependencies first. API uses 7310; owner dashboard 7311; learner preview 7312. Node 24 is required. Owner demo: `admin@qubit.demo` / `QubitDemo2026!`.
 
-- Separate learner and administrator cookie sessions; hashed passwords; tenant-scoped permissions; password confirmation for role changes; revocable devices.
-- Course drafts, lesson authoring/reordering, review approval, publishing preflight, immutable published snapshots, and original-version access for enrolled learners.
-- User search, invitation records, validated CSV preview/import, account status, restricted course access grants, and audited exports.
-- Server-timed quizzes, answer-key protection, server scoring, attempt limits, idempotent submissions, and completion events.
-- Learner assignment uploads and text, staff grading and feedback, and returned-work resubmission.
-- Operational dashboards, question bank, media uploads, announcements, community, live-session records, certificate verification/revocation, support, privacy review requests, organisations, commercial preferences, prompts and feature controls.
-- A reference-only learning assistant, explicitly labelled as a non-generative fallback. No AI API calls are made.
-- Local database backup with integrity and restored-read validation.
+## Coaching operations
 
-The feature matrix lists partial implementations, provider requirements, and production work explicitly. Synthetic pilot trends and catalogue ratings/enrolment counts are labelled and are separate from actual workspace totals.
+- Live database counts for accounts, active paid learners, recent online presence, pending payment/approval/activation and upcoming renewals.
+- INR packages with course access and validity, recorded payment verification, explicit subscription approval, renewal scheduling, cancellations and separate account activation.
+- Learner search, progress, assessments, active/inactive/blocked states and immediate session revocation.
+- Course drafts, faculty/batch/language, uploaded cover photos, reading/video/image/document lessons, review and publishing, immutable versions and explicit upgrades for enrolled learners.
+- Private multipart media uploads, byte-range video playback, PDF rendering, Word text previews and original-file downloads. Access is rechecked against account, package, tenant and course version.
+- Staff accounts, custom roles, owner-confirmed grants, permission enforcement, announcements, question bank, assignments/feedback, live-class links, support and audit history.
+- Clean navy/teal navigation with bundled Inter, Plus Jakarta Sans and Devanagari fonts, and realistic generated Indian course photos.
 
-## Validation
+`npm test` exercises authentication, tenant boundaries, approvals, assets, subscription expiry, blocking, staff roles, course versions, quizzes and Windows paths. `npm run test:e2e` covers both products, real video/PDF/Word delivery, offline reading and accessibility checks.
 
-```bash
-npm test                 # isolated in-memory API integration tests
-npm run typecheck
-npm run build
-npm run test:e2e         # launches/reuses BOTH frontends and API
-npm run backup           # online SQLite snapshot + integrity/restored-read check
-npm run format:check
-```
-
-Browser tests use system Chromium when installed at `/usr/bin/chromium`. Otherwise install Playwright's Chromium with `npx playwright install chromium`. The end-to-end suite creates synthetic test accounts, courses and submissions; run it against a development database. It tests the actual learner-to-admin feedback journey, publication, offline queue sync, overview accessibility, and route rendering.
-
-## Runtime configuration
-
-| Name | Default / purpose |
-| --- | --- |
-| PORT | `7310` API port |
-| API_HOST | `127.0.0.1`; bind deliberately when exposing the API |
-| DB_PATH | `server/../.data/qubit.sqlite` |
-| ALLOWED_ORIGINS | Explicit localhost frontend and Capacitor origins in `server/app.mjs` |
-| NODE_ENV | Development. Setting production alone does not harden this prototype. |
-
-Dependencies are locked. `.data/`, uploads within the database, local backups, dependencies and build artefacts are ignored. Do not remove `.data/` unless you intend to discard the local prototype records. The first API start seeds synthetic course material and demo accounts once.
-
-## Documentation
-
-- [Feature coverage and boundaries](docs/FEATURE_MATRIX.md)
-- [Architecture, data and API](docs/ARCHITECTURE.md)
-- [Prototype review walkthrough](docs/REVIEW_GUIDE.md)
-- [Production implementation backlog](docs/PRODUCTION_BACKLOG.md)
-
-- [Validation evidence](docs/VALIDATION.md)
-- [Reproducible cloud setup script](scripts/setup.sh)
+This is a local prototype. Payments are verified manually; no bank, email, push or production AI provider is connected. Demo content and public credentials are included for exploration. See the setup guide before release or deployment.

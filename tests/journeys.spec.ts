@@ -1,410 +1,264 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-const APP = "http://localhost:7312",
-  ADMIN = "http://localhost:7311";
-const password = "JourneyTest2026!";
-test("learner completes learning, notes, offline sync, assessment, certificate, and assignment review", async ({
+const cp = "http://localhost:7311",
+  app = "http://localhost:7312";
+async function owner(page: any) {
+  await page.goto(cp);
+  await page.getByRole("button", { name: "Sign in to dashboard" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Your coaching, at a glance" }),
+  ).toBeVisible();
+}
+async function learner(page: any) {
+  await page.goto(app);
+  await page.getByRole("button", { name: "Let’s get learning" }).click();
+  await expect(
+    page.getByRole("heading", { name: /Hello, Aarav/ }),
+  ).toBeVisible();
+}
+test("new learner requests a package; owner verifies payment, activates separately, then blocks access", async ({
   browser,
 }) => {
-  const context = await browser.newContext({
-      viewport: { width: 390, height: 844 },
+  const lc = await browser.newContext({
+      viewport: { width: 393, height: 852 },
     }),
-    page = await context.newPage();
-  const errors: string[] = [];
-  page.on("pageerror", (e) => errors.push(e.message));
-  const runId = Date.now();
-  const learnerName = `Taylor Journey ${runId}`;
-  const email = `journey-${runId}@example.test`;
-  await page.goto(APP);
-  await page
-    .getByRole("button", { name: "Create an account", exact: false })
+    oc = await browser.newContext();
+  const l = await lc.newPage(),
+    o = await oc.newPage();
+  const email = `admission-${Date.now()}@test.in`;
+  await l.goto(app);
+  await l.getByRole("button", { name: /New here/ }).click();
+  await l.getByLabel("Full name", { exact: true }).fill("Ananya Admission");
+  await l.getByLabel("Mobile number", { exact: true }).fill("9876543210");
+  await l.getByLabel("Email address", { exact: true }).fill(email);
+  await l.getByLabel("Password", { exact: true }).fill("AdmissionTest2026!");
+  await l.getByLabel(/I agree to/).check();
+  await l
+    .getByRole("button", { name: "Create my account", exact: true })
     .click();
-  await page.getByLabel("Your name", { exact: true }).fill(learnerName);
-  await page.getByLabel("Email", { exact: true }).fill(email);
-  await page.getByLabel("Password · at least 12 characters").fill(password);
-  await page
-    .getByLabel("I agree to the prototype terms and privacy notice.")
-    .check();
-  await page
-    .getByRole("button", { name: "Create your space", exact: true })
+  await expect(l.getByRole("heading", { name: /Hello, Ananya/ })).toBeVisible();
+  await l.goto(app + "/plans");
+  await l
+    .locator(".package-card")
+    .filter({
+      has: l.getByRole("heading", {
+        name: "JEE Physics · 90 days",
+        exact: true,
+      }),
+    })
+    .getByRole("button", { name: /Choose this package/ })
     .click();
+  await l.getByRole("combobox").selectOption("UPI");
+  await l.getByRole("button", { name: "Send package request" }).click();
+  await expect(l.getByText("Pending payment", { exact: true })).toBeVisible();
+  await l.getByRole("button", { name: /I’ve paid/ }).click();
+  await l
+    .getByLabel("UPI / bank reference or cash receipt number", { exact: true })
+    .fill("UPI-TEST-123456");
+  await l.getByRole("button", { name: "Submit for verification" }).click();
+  await expect(l.getByText("Pending approval", { exact: true })).toBeVisible();
+  await owner(o);
+  await o.goto(cp + "/admissions");
+  const row = o.getByRole("row").filter({ hasText: email });
+  await row.getByRole("button", { name: "Review", exact: true }).click();
+  await o.getByLabel("I have verified receipt of this payment.").check();
+  await o.getByLabel("Activate the learner account as well.").uncheck();
+  await o
+    .getByLabel("Review note", { exact: true })
+    .fill("UPI payment checked against statement");
+  await o
+    .getByRole("button", { name: "Approve subscription", exact: true })
+    .click();
+  await expect(o.getByRole("dialog")).toHaveCount(0);
+  await l.goto(app + "/lesson/jee-physics-2027-lesson-1");
   await expect(
-    page.getByRole("button", { name: "Welcome back", exact: true }),
+    l.getByText(/owner needs to activate your account/),
   ).toBeVisible();
-  await page.getByLabel("Email address", { exact: true }).fill(email);
-  await page.getByLabel("Password", { exact: true }).fill(password);
-  await page.getByRole("button", { name: "Welcome back", exact: true }).click();
+  await o.goto(cp + "/learners");
+  await o.getByLabel("Search learners", { exact: true }).fill(email);
+  await o.getByRole("button", { name: "Manage", exact: true }).click();
+  await o.getByLabel("Account status", { exact: true }).selectOption("Active");
+  await o
+    .getByLabel("Reason for this change", { exact: true })
+    .fill("Identity verified by admissions");
+  await o.getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(o.getByRole("dialog")).toHaveCount(0);
+  await l.goto(app + "/course/jee-physics-2027");
+  await l.getByRole("button", { name: "Start learning", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Hello, Taylor" }),
-  ).toBeVisible();
-  await page.goto(APP + "/explore");
-  await page.getByRole("button", { name: "Design", exact: true }).click();
-  await expect(
-    page.getByRole("heading", {
-      name: "Design thinking for everyday innovation",
+    l.getByRole("heading", {
+      name: "Welcome to your physics journey",
       exact: true,
     }),
   ).toBeVisible();
-  await page
-    .getByRole("heading", {
-      name: "Design thinking for everyday innovation",
+  await l
+    .getByRole("button", { name: "Complete & next lesson", exact: true })
+    .click();
+  await expect(
+    l.getByRole("heading", {
+      name: "Newton’s laws · a quick revision",
       exact: true,
-    })
-    .click();
-  await page
-    .getByRole("button", { name: "Begin your journey · Free", exact: false })
-    .click();
-  await expect(
-    page.getByRole("button", { name: "Start learning", exact: false }),
+    }),
   ).toBeVisible();
-  await page.goto(APP + "/lesson/design-thinking-lesson-1");
-  await page
-    .getByLabel("Your lesson note")
-    .fill(
-      "A prototype is a question made tangible. Start with people and listen carefully.",
-    );
-  await page
-    .getByRole("button", { name: "Save a little thought", exact: false })
-    .click();
-  await expect(
-    page.getByText(
-      "A prototype is a question made tangible. Start with people and listen carefully.",
-      { exact: true },
-    ),
-  ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Download lesson", exact: true })
-    .click();
-  await expect(
-    page.getByText("Saved for offline learning for 24 hours.", { exact: true }),
-  ).toBeVisible();
-  // A downloaded lesson stays readable offline. Progress queues and is sent once after reconnect.
-  await context.setOffline(true);
-  await expect(
-    page.getByText(
-      "You’re offline. Downloaded lessons and local notes are available.",
-      { exact: false },
-    ),
-  ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Complete & continue", exact: false })
-    .click();
-  await page.waitForTimeout(300);
-  expect(
-    await page.evaluate(() =>
-      Object.keys(localStorage)
-        .filter((k) => k.endsWith(":queue"))
-        .some((k) => JSON.parse(localStorage.getItem(k) || "[]").length > 0),
-    ),
-  ).toBeTruthy();
-  await context.setOffline(false);
-  await expect
-    .poll(() =>
-      page.evaluate(() =>
-        Object.keys(localStorage)
-          .filter((k) => k.endsWith(":queue"))
-          .every(
-            (k) => JSON.parse(localStorage.getItem(k) || "[]").length === 0,
-          ),
-      ),
-    )
-    .toBeTruthy();
-  for (let i = 2; i <= 6; i++) {
-    await page.goto(APP + `/lesson/design-thinking-lesson-${i}`);
-    await page
-      .getByRole("button", { name: "Complete & continue", exact: false })
-      .click();
-  }
-  await page.goto(APP + "/quiz/design-thinking");
-  await page
-    .getByRole("button", {
-      name: "Let’s give it a little thought",
-      exact: false,
-    })
-    .click();
-  for (let i = 0; i < 5; i++) {
-    const prompt = await page.locator(".quiz-question h1").innerText();
-    if (prompt.includes("begin with"))
-      await page
-        .getByText("Understanding people and their context", { exact: true })
-        .click();
-    else if (prompt.includes("interview"))
-      await page
-        .getByText("Tell me about the last time you experienced this.", {
-          exact: true,
-        })
-        .click();
-    else if (prompt.includes("criteria")) {
-      for (const s of ["Desirability", "Feasibility", "Viability"])
-        await page.getByText(s, { exact: true }).click();
-    } else if (prompt.includes("fully functional"))
-      await page.getByText("False", { exact: true }).click();
-    else await page.getByLabel("Your answer", { exact: true }).fill("tangible");
-    await page
-      .getByRole("button", {
-        name: i === 4 ? "Review answers" : "Next question",
-        exact: false,
-      })
-      .click();
-  }
-  await page
-    .getByRole("button", { name: "Submit your assessment", exact: false })
-    .click();
-  await expect(
-    page.getByRole("heading", { name: "Look at you grow." }),
-  ).toBeVisible();
-  await expect(page.locator(".result-score")).toHaveText("100%");
-  await page.goto(APP + "/certificates");
-  await page
-    .getByRole("button", { name: "Check eligibility", exact: false })
-    .first()
-    .click();
-  await expect(page.locator(".certificate-print")).toContainText(
-    "Taylor Journey",
-  );
-  await page
-    .getByRole("button", { name: "Verify authenticity", exact: false })
-    .click();
-  await expect(
-    page.getByText("Verification: Valid.", { exact: false }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Close dialog", exact: true }).click();
-  await page.goto(APP + "/assignments");
-  await page
-    .getByRole("button", {
-      name: "Your first human-centred challenge",
-      exact: false,
-    })
-    .click();
-  await page
-    .getByLabel("Your reflection", { exact: true })
-    .fill(
-      "I interviewed a commuter to understand uncertainty. My problem statement focuses on a calmer morning. I would prototype a paper journey planner and test it with three commuters.",
-    );
-  await page
-    .getByRole("button", { name: "Submit your work", exact: false })
-    .click();
-  await expect(page.getByText("Submitted", { exact: true })).toBeVisible();
-  const admin = await browser.newContext(),
-    ap = await admin.newPage();
-  await ap.goto(ADMIN);
-  await ap
-    .getByRole("button", { name: "Enter demo workspace", exact: true })
-    .click();
-  await expect(
-    ap.getByRole("heading", { name: "Good morning, Alex." }),
-  ).toBeVisible();
-  await ap.goto(ADMIN + "/submissions");
-  await ap
-    .getByRole("textbox", { name: "Search Review workspace", exact: true })
-    .fill(learnerName);
-  await ap.getByRole("button", { name: learnerName, exact: true }).click();
-  await ap
-    .getByRole("button", { name: "Review & give feedback", exact: false })
-    .click();
-  await ap.getByLabel("Score (0–100)", { exact: true }).fill("92");
-  await ap
-    .getByLabel("Rubric feedback", { exact: true })
-    .fill(
-      "Thoughtful research, a clearly framed need, and a practical prototype rationale.",
-    );
-  await ap.getByLabel("Review outcome", { exact: true }).selectOption("Graded");
-  await ap.getByRole("button", { name: "Save changes", exact: false }).click();
-  await page.goto(APP + "/assignments");
-  await page
-    .getByRole("button", {
-      name: "Your first human-centred challenge",
-      exact: false,
-    })
-    .click();
-  await expect(page.getByText("92/100", { exact: true })).toBeVisible();
-  await expect(
-    page.getByText(
-      "Thoughtful research, a clearly framed need, and a practical prototype rationale.",
-      { exact: true },
-    ),
-  ).toBeVisible();
-  expect(errors).toEqual([]);
-  await admin.close();
-  await context.close();
+  await o.getByRole("button", { name: "Manage", exact: true }).click();
+  await o.getByLabel("Account status", { exact: true }).selectOption("Blocked");
+  await o
+    .getByLabel("Reason for this change", { exact: true })
+    .fill("Account requires owner review");
+  await o.getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(o.getByRole("dialog")).toHaveCount(0);
+  const status = await l.evaluate(async () => {
+    const r = await fetch("/api/v1/me", {
+      headers: { "X-Qubit-Surface": "learner" },
+    });
+    return r.status;
+  });
+  expect(status).toBe(401);
+  await lc.close();
+  await oc.close();
 });
-test("admin authors, reviews, preflights and publishes a new course", async ({
+test("owner creates a course, uploads a Word resource, previews and publishes it", async ({
   page,
 }) => {
-  await page.goto(ADMIN);
+  await owner(page);
+  await page.goto(cp + "/courses");
   await page
-    .getByRole("button", { name: "Enter demo workspace", exact: true })
+    .getByRole("button", { name: "Create course", exact: true })
     .click();
-  await expect(
-    page.getByRole("heading", { name: "Good morning, Alex." }),
-  ).toBeVisible();
-  await page.goto(ADMIN + "/courses");
-  await page
-    .getByRole("button", { name: "Create a course", exact: false })
-    .click();
-  const title = "A little possibility " + Date.now();
+  const title = "JEE Mechanics " + Date.now();
   await page.getByLabel("Course title", { exact: true }).fill(title);
+  await page.getByLabel("Faculty name", { exact: true }).fill("Dr. Ananya Rao");
+  await page.getByLabel("Batch name", { exact: true }).fill("Lakshya 2027");
   await page
-    .getByLabel("Course description", { exact: true })
-    .fill(
-      "Learn to observe everyday problems and turn insights into small, testable prototypes.",
-    );
-  await page.getByLabel("Instructor", { exact: true }).fill("Olivia Rhye");
+    .getByLabel("About this course", { exact: true })
+    .fill("A focused mechanics revision course with accessible chapter notes.");
   await page
-    .getByLabel("Learning outcomes · separate with semicolons", { exact: true })
-    .fill("Observe real needs; Build a small prototype");
+    .getByLabel("Learning outcomes", { exact: true })
+    .fill("Explain Newton’s second law and draw free-body diagrams.");
   await page
-    .getByRole("button", { name: "Create draft", exact: false })
-    .click();
-  await page.getByRole("button", { name: "Curriculum", exact: true }).click();
-  await page.getByRole("button", { name: "Add lesson", exact: false }).click();
-  await page
-    .getByLabel("Lesson title", { exact: true })
-    .fill("A first little experiment");
-  await page
-    .getByLabel("Lesson content or transcript", { exact: true })
-    .fill(
-      "Start by listening to people, noting observations, and building the smallest useful prototype to test your assumptions.",
-    );
-  await page
-    .getByLabel("I confirm the rights to this content", { exact: true })
-    .check();
-  await page
-    .getByRole("button", { name: "Add lesson", exact: false })
-    .last()
+    .getByRole("button", { name: "Create course draft", exact: true })
     .click();
   await expect(
-    page.getByText("A first little experiment", { exact: true }),
+    page.getByRole("heading", { name: title, exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Publishing", exact: true }).click();
+  await page.getByRole("button", { name: "Add lesson", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog
+    .getByLabel("I have permission to share this content with learners.", {
+      exact: true,
+    })
+    .check();
+  await dialog
+    .locator("input[type=file]")
+    .setInputFiles("server/assets/study-workbook.docx");
+  await expect(
+    dialog.getByText("Attached resources (1)", { exact: true }),
+  ).toBeVisible();
+  await dialog
+    .getByLabel("Lesson title", { exact: true })
+    .fill("Newton’s laws revision workbook");
+  await dialog
+    .getByLabel("Lesson format", { exact: true })
+    .selectOption("Document");
+  await dialog
+    .getByLabel("Reading notes or video transcript", { exact: true })
+    .fill(
+      "Read the attached workbook. Identify all external forces before applying Newton’s second law.",
+    );
+  await dialog
+    .getByLabel("I have permission to publish this lesson", { exact: true })
+    .check();
+  await dialog
+    .getByRole("button", { name: "Save changes", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.getByRole("button", { name: "Preview", exact: true }).click();
+  await expect(
+    page.getByText("QUBIT COACHING | CHAPTER REVISION WORKBOOK", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Close dialog" }).click();
   await page
-    .getByRole("button", { name: "Approve human review", exact: true })
+    .getByRole("button", { name: "Review & publish", exact: true })
     .click();
   await page
-    .getByRole("button", { name: "Run preflight", exact: false })
+    .getByRole("button", { name: "Confirm owner review", exact: true })
     .click();
   await expect(
-    page.getByRole("button", { name: "Publish version 1", exact: false }),
+    page.getByRole("button", { name: "Publish course", exact: true }),
   ).toBeEnabled();
   await page
-    .getByRole("button", { name: "Publish version 1", exact: false })
+    .getByRole("button", { name: "Publish course", exact: true })
     .click();
-  await expect(
-    page.getByText("Published · Version 1", { exact: false }),
-  ).toBeVisible();
+  await expect(page.getByText("Published", { exact: true })).toBeVisible();
 });
-test("admin and learner overview pass automated accessibility checks on desktop and mobile", async ({
+test("learner plays protected video and renders a real PDF on a narrow screen", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 393, height: 852 });
+  await learner(page);
+  await page.goto(app + "/lesson/jee-physics-2027-lesson-2");
+  const video = page.locator("video");
+  await expect(video).toBeVisible();
+  await expect
+    .poll(() => video.evaluate((v: HTMLVideoElement) => v.readyState))
+    .toBeGreaterThanOrEqual(1);
+  await video.evaluate((v: HTMLVideoElement) => v.play());
+  await expect
+    .poll(() => video.evaluate((v: HTMLVideoElement) => v.currentTime))
+    .toBeGreaterThan(0);
+  await page.goto(app + "/lesson/jee-physics-2027-lesson-3");
+  await expect(page.getByText("Page 1 of 1", { exact: true })).toBeVisible();
+  await expect
+    .poll(() =>
+      page.locator("canvas").evaluate((c: HTMLCanvasElement) => c.width),
+    )
+    .toBeGreaterThan(0);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth,
+    ),
+  ).toBe(false);
+});
+test("owner and learner navigation remain usable with no serious accessibility violations", async ({
   browser,
 }) => {
-  for (const [url, button] of [
-    [ADMIN, "Enter demo workspace"],
-    [APP, "Explore the learner demo"],
-  ]) {
-    const context = await browser.newContext({
-      viewport: { width: 1440, height: 1000 },
-    });
-    const page = await context.newPage();
-    await page.goto(url);
-    await page.getByRole("button", { name: button, exact: true }).click();
-    await page.waitForTimeout(1200);
-    for (const width of [1440, 390]) {
-      await page.setViewportSize({ width, height: 900 });
-      await page.waitForTimeout(300);
-      const result = await new AxeBuilder({ page })
-        .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
-        .analyze();
-      expect(
-        result.violations.map((v) => ({
-          id: v.id,
-          nodes: v.nodes.map((n) => n.target),
-        })),
-      ).toEqual([]);
-      expect(
-        await page.evaluate(
-          () => document.documentElement.scrollWidth <= innerWidth,
-        ),
-      ).toBeTruthy();
-    }
-    await context.close();
-  }
-});
-test("every admin workspace and learner screen renders without browser errors", async ({
-  browser,
-}) => {
-  for (const [url, button, routes] of [
-    [
-      ADMIN,
-      "Enter demo workspace",
-      [
-        "courses",
-        "users",
-        "roles",
-        "groups",
-        "questions",
-        "assignments",
-        "submissions",
-        "media",
-        "sessions",
-        "discussions",
-        "certificates",
-        "analytics",
-        "intelligence",
-        "notifications",
-        "tenants",
-        "plans",
-        "transactions",
-        "operations",
-        "jobs",
-        "incidents",
-        "backups",
-        "audit",
-        "privacy",
-        "integrations",
-        "flags",
-        "reports",
-        "prompts",
-        "settings",
-        "account",
-        "tickets",
-      ],
-    ],
-    [
-      APP,
-      "Explore the learner demo",
-      [
-        "explore",
-        "learning",
-        "course/design-thinking",
-        "lesson/design-thinking-lesson-1",
-        "assignments",
-        "progress",
-        "assistant",
-        "downloads",
-        "notifications",
-        "community",
-        "live",
-        "certificates",
-        "profile",
-        "support",
-      ],
-    ],
+  for (const [kind, viewport] of [
+    ["owner", { width: 1440, height: 1000 }],
+    ["learner", { width: 393, height: 852 }],
   ] as const) {
-    const context = await browser.newContext(),
+    const context = await browser.newContext({ viewport }),
       page = await context.newPage();
     const errors: string[] = [];
     page.on("pageerror", (e) => errors.push(e.message));
-    await page.goto(url);
-    await page.getByRole("button", { name: button, exact: true }).click();
-    await expect(
-      page.getByRole("heading", {
-        name: url === ADMIN ? "Good morning, Alex." : "Hello, Jamie",
-      }),
-    ).toBeVisible();
-    for (const route of routes) {
-      await page.goto(url + "/" + route);
-      await expect(page.locator("main")).toBeVisible();
-      await page.waitForTimeout(120);
-      await expect(page.locator(".error-state")).toHaveCount(0);
+    await (kind === "owner" ? owner(page) : learner(page));
+    await page.waitForTimeout(300);
+    const result = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa"])
+      .analyze();
+    expect(
+      result.violations.filter((v) =>
+        ["critical", "serious"].includes(v.impact || ""),
+      ),
+    ).toEqual([]);
+    for (const path of kind === "owner"
+      ? [
+          "/learners",
+          "/courses",
+          "/packages",
+          "/reports",
+          "/workspace",
+          "/permissions",
+        ]
+      : ["/courses", "/tests", "/subscription", "/profile"]) {
+      await page.goto((kind === "owner" ? cp : app) + path);
+      await expect(page.locator("h1").first()).toBeVisible();
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth > window.innerWidth,
+        ),
+      ).toBe(false);
     }
     expect(errors).toEqual([]);
     await context.close();

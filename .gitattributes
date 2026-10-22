@@ -1,3 +1,12 @@
 * text=auto eol=lf
 *.sh text eol=lf
 *.bat text eol=crlf
+
+# Keep learning asset bytes intact, including PDF xref offsets on Windows.
+*.pdf binary
+*.docx binary
+*.mp4 binary
+*.webm binary
+*.png binary
+*.jpg binary
+*.jpeg binary

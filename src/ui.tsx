@@ -12,6 +12,7 @@ import {
   ArrowUp,
   ArrowUpRight,
   Award,
+  BadgeCheck,
   Bell,
   BookOpen,
   BookOpenCheck,
@@ -36,10 +37,12 @@ import {
   DatabaseBackup,
   Download,
   FileChartColumn,
+  FileText,
   FileUp,
   Flag,
   GitBranch,
   GraduationCap,
+  HeartHandshake,
   Image,
   Images,
   Inbox,
@@ -58,6 +61,7 @@ import {
   Menu,
   MessagesSquare,
   Network,
+  Package,
   PanelLeft,
   Pencil,
   Plug,
@@ -84,6 +88,7 @@ import {
   Video,
   WandSparkles,
   Workflow,
+  X,
 } from "lucide-react";
 const iconMap: Record<string, any> = {
   Activity,
@@ -92,6 +97,7 @@ const iconMap: Record<string, any> = {
   ArrowUp,
   ArrowUpRight,
   Award,
+  BadgeCheck,
   Bell,
   BookOpen,
   BookOpenCheck,
@@ -116,10 +122,12 @@ const iconMap: Record<string, any> = {
   DatabaseBackup,
   Download,
   FileChartColumn,
+  FileText,
   FileUp,
   Flag,
   GitBranch,
   GraduationCap,
+  HeartHandshake,
   Image,
   Images,
   Inbox,
@@ -138,6 +146,7 @@ const iconMap: Record<string, any> = {
   Menu,
   MessagesSquare,
   Network,
+  Package,
   PanelLeft,
   Pencil,
   Plug,
@@ -164,6 +173,7 @@ const iconMap: Record<string, any> = {
   Video,
   WandSparkles,
   Workflow,
+  X,
 };
 export type Row = Record<string, any>;
 const SURFACE = "admin";
@@ -240,7 +250,9 @@ export function Badge({ children }: { children: React.ReactNode }) {
           s,
         )
           ? "good"
-          : /Failed|Suspended|Revoked|Rejected|Deactivated/.test(s)
+          : /Failed|Suspended|Revoked|Rejected|Deactivated|Blocked|Inactive/.test(
+                s,
+              )
             ? "bad"
             : /Review|Pending|Submitted|Investigating|Queued|Invited/.test(s)
               ? "warn"
@@ -445,7 +457,7 @@ export type Field = {
   name: string;
   label: string;
   type?: string;
-  options?: string[];
+  options?: (string | { label: string; value: string })[];
   required?: boolean;
   placeholder?: string;
   help?: string;
@@ -513,7 +525,12 @@ export function Form({
               >
                 <option value="">Select an option</option>
                 {f.options?.map((o) => (
-                  <option key={o}>{o}</option>
+                  <option
+                    key={typeof o === "string" ? o : o.value}
+                    value={typeof o === "string" ? o : o.value}
+                  >
+                    {typeof o === "string" ? o : o.label}
+                  </option>
                 ))}
               </select>
             ) : f.type === "checkbox" ? (
@@ -732,3 +749,5 @@ export class ErrorBoundary extends React.Component<
     );
   }
 }
+
+export const absoluteApiPath = (path: string) => path;

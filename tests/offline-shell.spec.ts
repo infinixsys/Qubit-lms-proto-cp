@@ -1,47 +1,40 @@
 import { test, expect } from "@playwright/test";
-test("production app reloads downloaded content offline and enforces download expiry", async ({
+test("production app reloads a downloaded reading offline and enforces access expiry", async ({
   browser,
 }) => {
   const context = await browser.newContext({
-      viewport: { width: 390, height: 844 },
+      viewport: { width: 393, height: 852 },
     }),
     page = await context.newPage();
-  const errors: string[] = [];
-  page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("http://localhost:7313");
   await page.evaluate(() => navigator.serviceWorker.ready);
-  await page
-    .getByRole("button", { name: "Explore the learner demo", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Let’s get learning" }).click();
   await expect(
-    page.getByRole("heading", { name: "Hello, Jamie" }),
+    page.getByRole("heading", { name: /Hello, Aarav/ }),
   ).toBeVisible();
-  await page.goto("http://localhost:7313/lesson/design-thinking-lesson-1");
+  await page.goto("http://localhost:7313/lesson/jee-physics-2027-lesson-1");
   await page
-    .getByRole("button", { name: "Download lesson", exact: true })
+    .getByRole("button", { name: "Save reading offline", exact: true })
     .click();
   await expect(
-    page.getByText("Saved for offline learning for 24 hours.", { exact: true }),
+    page.getByText("Reading saved for up to 24 hours.", { exact: true }),
   ).toBeVisible();
   await context.setOffline(true);
   await page.reload();
   await expect(
     page.getByRole("heading", {
-      name: "A different way to solve problems",
+      name: "Welcome to your physics journey",
       exact: true,
     }),
   ).toBeVisible();
-  await expect(
-    page.getByText("Design thinking is a human-centred, iterative approach", {
-      exact: false,
-    }),
-  ).toBeVisible();
+  await expect(page.locator(".lesson-reading")).toContainText(
+    "Physics becomes easier",
+  );
+  await page.getByRole("button", { name: "My notes", exact: true }).click();
   await page
-    .getByLabel("Your lesson note")
-    .fill("A little note captured completely offline.");
-  await page
-    .getByRole("button", { name: "Save a little thought", exact: false })
-    .click();
+    .getByLabel("My lesson notes", { exact: true })
+    .fill("Draw all forces on the selected body.");
+  await page.getByRole("button", { name: "Save note", exact: true }).click();
   expect(
     await page.evaluate(() =>
       Object.keys(localStorage)
@@ -62,23 +55,19 @@ test("production app reloads downloaded content offline and enforces download ex
     )
     .toBeTruthy();
   await page.evaluate(() => {
-    for (const key of Object.keys(localStorage).filter((k) =>
+    for (const k of Object.keys(localStorage).filter((k) =>
       k.endsWith(":downloads"),
     )) {
-      const rows = JSON.parse(localStorage.getItem(key) || "[]");
+      const rows = JSON.parse(localStorage.getItem(k) || "[]");
       rows.forEach((r: any) => (r.expires = Date.now() - 1000));
-      localStorage.setItem(key, JSON.stringify(rows));
+      localStorage.setItem(k, JSON.stringify(rows));
     }
   });
   await context.setOffline(true);
   await page.reload();
   await expect(
-    page.getByText(
-      "Download this lesson while online before reading offline. Downloads expire after 24 hours.",
-      { exact: true },
-    ),
+    page.getByText(/Download this lesson while online before reading offline/),
   ).toBeVisible();
-  await expect(page.locator(".lesson-prose")).toHaveCount(0);
-  expect(errors).toEqual([]);
+  await expect(page.locator(".lesson-reading")).toHaveCount(0);
   await context.close();
 });

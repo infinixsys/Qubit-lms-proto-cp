@@ -1,4 +1,5 @@
 import { DatabaseSync } from "node:sqlite";
+import { seedCoaching } from "./coaching-data.mjs";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -226,7 +227,9 @@ export function openDb(path = process.env.DB_PATH || DEFAULT_DB_PATH) {
       "Synthetic prototype data",
     );
   }
-  return { db, get, list, put, audit, path };
+  const store = { db, get, list, put, audit, path };
+  seedCoaching(store, hashPassword);
+  return store;
 }
 export const safeUser = (u) => {
   if (!u) return null;

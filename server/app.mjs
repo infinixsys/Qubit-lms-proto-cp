@@ -6,6 +6,11 @@ import { randomUUID, randomBytes, createHash } from "node:crypto";
 import { z } from "zod";
 import { openDb, safeUser, hashPassword, verifyPassword } from "./db.mjs";
 import { now, lessonsFor } from "./seed.mjs";
+import {
+  registerCoaching,
+  assertCoachingAccess,
+  userPermissions,
+} from "./coaching.mjs";
 const digest = (s) => createHash("sha256").update(s).digest("hex");
 const perms = {
   "Super Admin": ["*"],
@@ -31,7 +36,7 @@ const perms = {
     "sessions",
   ],
   Support: ["tickets", "notifications"],
-  Finance: ["plans", "transactions", "analytics", "reports"],
+  Finance: ["plans", "transactions", "analytics", "reports", "billing"],
   Learner: [],
 };
 const areas = {
@@ -74,6 +79,7 @@ const fields = {
     "answer",
     "explanation",
     "reference",
+    "courseId",
   ],
   notifications: [
     "title",
@@ -122,6 +128,7 @@ export async function createApp({ dbPath, logger = false } = {}) {
   const app = Fastify({ logger, bodyLimit: 8 * 1024 * 1024 });
   const store = openDb(dbPath);
   const { db, get, list, put, audit } = store;
+  const permissionsFor = (u) => userPermissions(store, u, perms);
   app.store = store;
   const origins = (
     process.env.ALLOWED_ORIGINS ||
@@ -145,7 +152,11 @@ export async function createApp({ dbPath, logger = false } = {}) {
       if (origin && !origins.includes(origin))
         fail(403, "This origin is not allowed.", "ORIGIN_REJECTED");
     }
-    const token = req.cookies[cookieName(req)];
+    const token =
+      (surface(req) === "learner" &&
+      req.headers.authorization?.startsWith("Bearer ")
+        ? req.headers.authorization.slice(7)
+        : null) || req.cookies[cookieName(req)];
     if (token) {
       const s = db
         .prepare("SELECT * FROM sessions WHERE hash=? AND expires>?")
@@ -153,11 +164,19 @@ export async function createApp({ dbPath, logger = false } = {}) {
       if (s) {
         const u = db.prepare("SELECT * FROM users WHERE id=?").get(s.user_id);
         if (
-          u?.status === "Active" &&
+          ["Active", "Pending activation"].includes(u?.status) &&
           get("tenants", u.tenant)?.status !== "Suspended"
         ) {
           req.user = u;
           req.session = s.hash;
+          if (
+            !u.last_seen ||
+            Date.now() - new Date(u.last_seen).getTime() > 60000
+          )
+            db.prepare("UPDATE users SET last_seen=? WHERE id=?").run(
+              now(),
+              u.id,
+            );
         }
       }
     }
@@ -189,7 +208,7 @@ export async function createApp({ dbPath, logger = false } = {}) {
   };
   const permit = (req, area) => {
     const u = auth(req);
-    if (!perms[u.role]?.some((p) => p === "*" || p === area))
+    if (!permissionsFor(u).some((p) => p === "*" || p === area))
       fail(403, "Your role does not have access to this action.", "FORBIDDEN");
     return u;
   };
@@ -227,6 +246,13 @@ export async function createApp({ dbPath, logger = false } = {}) {
   };
   const enrolled = (u, id) => {
     const c = courseFor(u, id);
+    if (u.status !== "Active")
+      fail(
+        403,
+        "Your coaching owner needs to activate your account before learning.",
+        "ACTIVATION_REQUIRED",
+      );
+    assertCoachingAccess(store, u, c);
     const e = db
       .prepare(
         "SELECT * FROM enrolments WHERE user_id=? AND course_id=? AND state=?",
@@ -281,7 +307,7 @@ export async function createApp({ dbPath, logger = false } = {}) {
       if (
         !u ||
         !verifyPassword(b.password, u.password) ||
-        u.status !== "Active"
+        !["Active", "Pending activation"].includes(u.status)
       ) {
         audit(
           null,
@@ -312,7 +338,12 @@ export async function createApp({ dbPath, logger = false } = {}) {
       audit(u, "Signed in", u.id);
       return {
         user: safeUser(u),
-        permissions: perms[u.role],
+        permissions: permissionsFor(u),
+        nativeToken:
+          req.headers["x-qubit-platform"] === "android" &&
+          surface(req) === "learner"
+            ? token
+            : undefined,
         mfa: {
           enforced: false,
           note: "Prototype authentication. Production MFA must be configured before deployment.",
@@ -330,6 +361,10 @@ export async function createApp({ dbPath, logger = false } = {}) {
           email: z.string().email(),
           password: z.string().min(12).max(128),
           consent: z.literal(true),
+          phone: z
+            .string()
+            .regex(/^(?:\+91)?[6-9][0-9]{9}$/)
+            .optional(),
         })
         .parse(req.body);
       if (
@@ -350,13 +385,15 @@ export async function createApp({ dbPath, logger = false } = {}) {
         b.email.toLowerCase(),
         b.name,
         "Learner",
-        "Active",
+        "Pending activation",
         hashPassword(b.password),
       );
+      if (b.phone)
+        db.prepare("UPDATE users SET phone=? WHERE id=?").run(b.phone, id);
       audit(null, "Account registered", id);
       return reply.code(201).send({
         message:
-          "Your account is ready. Sign in to begin. Email verification is not connected in this prototype.",
+          "Your account is created. Sign in to choose a package. Your coaching owner will verify your subscription and activate learning access.",
       });
     },
   );
@@ -372,7 +409,7 @@ export async function createApp({ dbPath, logger = false } = {}) {
   });
   app.get("/api/v1/me", async (req) => ({
     user: safeUser(auth(req)),
-    permissions: perms[req.user.role],
+    permissions: permissionsFor(req.user),
     mfa: { enforced: false },
   }));
   app.patch("/api/v1/me", async (req) => {
@@ -510,7 +547,8 @@ export async function createApp({ dbPath, logger = false } = {}) {
   app.post("/api/v1/courses/:id/enrolments", async (req) => {
     const u = auth(req),
       c = courseFor(u, req.params.id);
-    if (c.access !== "Open")
+    assertCoachingAccess(store, u, c);
+    if (c.access !== "Open" && !c.coaching)
       fail(
         403,
         "This course requires an access grant from your organisation.",
@@ -536,7 +574,19 @@ export async function createApp({ dbPath, logger = false } = {}) {
       fail(409, "Offline downloads are disabled by your administrator.");
     if (!l.downloadable || !l.rights)
       fail(403, "This lesson is not eligible for offline access.");
-    return { ...l, expires: Date.now() + 86400000 };
+    const c = get("courses", l.courseId);
+    const subscriptions = c.coaching
+      ? db
+          .prepare(
+            "SELECT expires,course_ids FROM subscriptions WHERE user_id=? AND status='Active' AND starts<=? AND expires>?",
+          )
+          .all(u.id, now(), now())
+          .filter((s) => JSON.parse(s.course_ids).includes(c.id))
+      : [];
+    const accessEnd = subscriptions.length
+      ? Math.max(...subscriptions.map((s) => new Date(s.expires).getTime()))
+      : Date.now() + 86400000;
+    return { ...l, expires: Math.min(Date.now() + 86400000, accessEnd) };
   });
   app.put("/api/v1/lessons/:id/progress", async (req) => {
     const u = auth(req),
@@ -660,6 +710,11 @@ export async function createApp({ dbPath, logger = false } = {}) {
         open.id,
       );
     const qs = list("questions", u.tenant)
+      .filter((q) =>
+        get("courses", req.params.id)?.coaching
+          ? q.courseId === req.params.id
+          : !q.courseId,
+      )
       .slice(0, 5)
       .sort(() => Math.random() - 0.5);
     if (!qs.length) fail(409, "No approved questions are available.");
@@ -680,6 +735,7 @@ export async function createApp({ dbPath, logger = false } = {}) {
       .prepare("SELECT * FROM attempts WHERE id=? AND user_id=?")
       .get(req.params.id, auth(req).id);
     if (!a) fail(404, "Attempt not found.");
+    enrolled(auth(req), a.course_id);
     return a;
   };
   app.put("/api/v1/quiz-attempts/:id/responses", async (req) => {
@@ -771,11 +827,21 @@ export async function createApp({ dbPath, logger = false } = {}) {
         : kind === "certificates" || kind === "tickets" || kind === "privacy"
           ? r.userId === u.id
           : !r.courseId ||
-            !!db
-              .prepare(
-                "SELECT user_id FROM enrolments WHERE user_id=? AND course_id=? AND state=?",
-              )
-              .get(u.id, r.courseId, "Active"),
+            (get("courses", r.courseId)?.coaching &&
+            (() => {
+              try {
+                assertCoachingAccess(store, u, get("courses", r.courseId));
+                return true;
+              } catch {
+                return false;
+              }
+            })() === false
+              ? false
+              : !!db
+                  .prepare(
+                    "SELECT user_id FROM enrolments WHERE user_id=? AND course_id=? AND state=?",
+                  )
+                  .get(u.id, r.courseId, "Active")),
     );
   });
   app.post("/api/v1/assignments/:id/submit", async (req) => {
@@ -1206,13 +1272,23 @@ export async function createApp({ dbPath, logger = false } = {}) {
         name: z.string().min(2).max(100).optional(),
         role: z.enum(Object.keys(perms)).optional(),
         status: z
-          .enum(["Active", "Suspended", "Deactivated", "Invited"])
+          .enum([
+            "Active",
+            "Inactive",
+            "Blocked",
+            "Pending activation",
+            "Suspended",
+            "Deactivated",
+            "Invited",
+          ])
           .optional(),
         reason: z.string().min(3).max(1000),
         password: z.string().optional(),
       })
       .strict()
       .parse(req.body);
+    if (target.role !== "Learner" && u.role !== "Super Admin")
+      fail(403, "Only the coaching owner can manage staff accounts.");
     if (b.role && b.role !== target.role) {
       if (u.role !== "Super Admin")
         fail(403, "Only Super Admin can change roles.");
@@ -1366,7 +1442,11 @@ export async function createApp({ dbPath, logger = false } = {}) {
           instructor: z.string().min(2),
           outcomes: z.string().min(10),
           access: z.enum(["Open", "Restricted"]).default("Open"),
-          language: z.string().default("English"),
+          language: z.string().default("Hindi + English"),
+          image: z.string().max(2000).optional(),
+          thumbnailAssetId: z.string().optional(),
+          exam: z.string().max(100).optional(),
+          batch: z.string().max(100).optional(),
         })
         .strict()
         .parse(req.body);
@@ -1376,6 +1456,9 @@ export async function createApp({ dbPath, logger = false } = {}) {
       {
         ...b,
         id,
+        coaching: true,
+        requiresSubscription: true,
+        image: b.image || "/images/physics.png",
         status: "Draft",
         version: 0,
         color: "sage",
@@ -1406,6 +1489,11 @@ export async function createApp({ dbPath, logger = false } = {}) {
         level: z.string().optional(),
         instructor: z.string().min(2).optional(),
         access: z.enum(["Open", "Restricted"]).optional(),
+        image: z.string().max(2000).optional(),
+        thumbnailAssetId: z.string().optional(),
+        language: z.string().max(100).optional(),
+        exam: z.string().max(100).optional(),
+        batch: z.string().max(100).optional(),
         status: z
           .enum(["Draft", "In Review", "Approved", "Archived"])
           .optional(),
@@ -1449,7 +1537,15 @@ export async function createApp({ dbPath, logger = false } = {}) {
         title: z.string().min(3),
         content: z.string().min(30).max(30000),
         module: z.string().min(3),
-        type: z.enum(["Reading", "Audio", "Video", "Document", "Link"]),
+        type: z.enum([
+          "Reading",
+          "Audio",
+          "Video",
+          "Document",
+          "Image",
+          "Link",
+        ]),
+        assetIds: z.array(z.string()).max(10).default([]),
         duration: z.number().min(1).max(600),
         captions: z.boolean(),
         rights: z.boolean(),
@@ -1457,6 +1553,7 @@ export async function createApp({ dbPath, logger = false } = {}) {
       })
       .strict()
       .parse(req.body);
+    for (const id of b.assetIds) scoped(req, "coaching_assets", id);
     return put(
       "lessons",
       {
@@ -1481,16 +1578,35 @@ export async function createApp({ dbPath, logger = false } = {}) {
         title: z.string().min(3).optional(),
         content: z.string().min(30).max(30000).optional(),
         position: z.number().int().min(0).optional(),
+        assetIds: z.array(z.string()).max(10).optional(),
+        type: z
+          .enum(["Reading", "Audio", "Video", "Document", "Image", "Link"])
+          .optional(),
+        duration: z.number().min(1).max(600).optional(),
         captions: z.boolean().optional(),
         rights: z.boolean().optional(),
       })
       .strict()
       .parse(req.body);
+    for (const id of b.assetIds || []) scoped(req, "coaching_assets", id);
     return put("lessons", { ...l, ...b }, u.tenant);
   });
   const preflight = (c) => {
     const ls = list("lessons").filter((l) => l.courseId === c.id);
     return [
+      {
+        label: "Uploaded resources are ready",
+        passed: ls.every(
+          (l) =>
+            !c.coaching ||
+            !["Video", "Document", "Image"].includes(l.type) ||
+            (l.assetIds?.length &&
+              l.assetIds.every(
+                (id) => get("coaching_assets", id)?.status === "Ready",
+              )),
+        ),
+        field: "lessons",
+      },
       {
         label: "Clear learning outcomes",
         passed: !!c.outcomes?.trim(),
@@ -1750,6 +1866,16 @@ export async function createApp({ dbPath, logger = false } = {}) {
     }
     audit(req.user, "Data exported", kind);
     return { data, exported: now() };
+  });
+  await registerCoaching({
+    app,
+    store,
+    auth,
+    permit,
+    scoped,
+    rows,
+    courseFor,
+    permissionsFor,
   });
   app.addHook("onClose", async () => db.close());
   return app;
