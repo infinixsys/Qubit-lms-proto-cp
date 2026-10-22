@@ -35,6 +35,10 @@ before(async () => {
 });
 after(async () => app.close());
 test("repair migration is idempotent and preserves owner edits and archived version history", () => {
+  assert.match(
+    app.store.get("notifications", "coaching-welcome").description,
+    /Refix India Institute/,
+  );
   const c = app.store.get("courses", "laptop-diagnostics");
   app.store.put("courses", { ...c, title: "Owner-edited laptop training" });
   const count = app.store.db

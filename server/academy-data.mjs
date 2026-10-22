@@ -115,6 +115,32 @@ const practice =
 
 export function seedAcademy(store) {
   const { db, get, put, list } = store;
+  if (!get("settings", "refix-institute-copy-v1")) {
+    const welcome = get("notifications", "coaching-welcome");
+    if (
+      welcome?.description ===
+      "Welcome to Qubit Coaching. Explore your courses, keep track of your package and make every study session count."
+    )
+      put("notifications", {
+        ...welcome,
+        title: "Welcome to the Refix repair bench",
+        description:
+          "Welcome to Refix India Institute. Explore mobile and laptop repair courses, submit bench observations and learn from your trainer's feedback.",
+      });
+    for (const [id, oldName, newName] of [
+      ["instructor-demo", "Dr. Ananya Rao", "Sandeep Verma"],
+      ["support-demo", "Demi Wilkinson", "Neha Patil"],
+      ["finance-demo", "Phoenix Baker", "Amit Kulkarni"],
+      ["tenant-admin", "Lana Steiner", "Priya Desai"],
+    ])
+      db.prepare(
+        "UPDATE users SET name=? WHERE id=? AND name=? AND tenant='tenant-demo'",
+      ).run(newName, id, oldName);
+    put("settings", {
+      id: "refix-institute-copy-v1",
+      completed: new Date().toISOString(),
+    });
+  }
   if (!get("settings", "refix-institute-v1")) {
     const config = get("settings", "coaching");
     if (["Refix India Academy", "Refix India Institute"].includes(config?.name))
