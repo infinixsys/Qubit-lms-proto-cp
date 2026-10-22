@@ -12,7 +12,7 @@ test("production app reloads a downloaded reading offline and enforces access ex
   await expect(
     page.getByRole("heading", { name: /Hello, Aarav/ }),
   ).toBeVisible();
-  await page.goto("http://localhost:7313/lesson/jee-physics-2027-lesson-1");
+  await page.goto("http://localhost:7313/lesson/laptop-diagnostics-lesson-1");
   await page
     .getByRole("button", { name: "Save reading offline", exact: true })
     .click();
@@ -23,17 +23,17 @@ test("production app reloads a downloaded reading offline and enforces access ex
   await page.reload();
   await expect(
     page.getByRole("heading", {
-      name: "Welcome to your physics journey",
+      name: "Start here · Your safe repair bench",
       exact: true,
     }),
   ).toBeVisible();
   await expect(page.locator(".lesson-reading")).toContainText(
-    "Physics becomes easier",
+    "Before opening a device",
   );
   await page.getByRole("button", { name: "My notes", exact: true }).click();
   await page
     .getByLabel("My lesson notes", { exact: true })
-    .fill("Draw all forces on the selected body.");
+    .fill("Record observations before making measurements.");
   await page.getByRole("button", { name: "Save note", exact: true }).click();
   expect(
     await page.evaluate(() =>

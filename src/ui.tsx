@@ -6,6 +6,10 @@ import React, {
   useState,
 } from "react";
 import {
+  ArrowDown,
+  CalendarDays,
+  ClipboardCheck,
+  Monitor,
   Activity,
   ArrowLeft,
   ArrowRight,
@@ -91,6 +95,10 @@ import {
   X,
 } from "lucide-react";
 const iconMap: Record<string, any> = {
+  ArrowDown,
+  CalendarDays,
+  ClipboardCheck,
+  Monitor,
   Activity,
   ArrowLeft,
   ArrowRight,
@@ -210,15 +218,21 @@ export function Icon({
 }
 export function Brand({ small = false }: { small?: boolean }) {
   return (
-    <div className={"brand " + (small ? "small" : "")}>
-      <span className="brand-mark">
-        <span />
-        <span />
-        <span />
-        <span />
+    <div className={"brand refix-brand " + (small ? "small" : "")}>
+      <span className="refix-mark" aria-hidden="true">
+        <svg viewBox="0 0 40 40" fill="none">
+          <path
+            d="M11 8h13a9 9 0 0 1 0 18H11V8Z"
+            stroke="currentColor"
+            strokeWidth="5"
+          />
+          <path d="m22 25 9 9M11 25v9" stroke="currentColor" strokeWidth="5" />
+          <path d="M4 17h13M4 24h9" stroke="currentColor" strokeWidth="3" />
+        </svg>
       </span>
-      <span>
-        qubit<span className="brand-dot">.</span>
+      <span className="refix-wordmark">
+        refix<span className="refix-india">INDIA</span>
+        <small>INSTITUTE</small>
       </span>
     </div>
   );

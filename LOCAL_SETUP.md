@@ -1,4 +1,4 @@
-# Run Qubit Coaching locally
+# Run Refix India Institute locally
 
 The owner dashboard and shared API live in **Qubit-lms-proto-cp**. The Android learner app lives in **Qubit-lms-proto-app**. No separate backend repository or external database is required for this prototype.
 
@@ -53,10 +53,10 @@ Development-only accounts, password **QubitDemo2026!**:
 
 | Account | Purpose |
 | --- | --- |
-| admin@qubit.demo | Coaching owner |
-| learner@qubit.demo | Activated learner with approved All Access package |
+| admin@qubit.demo | Institute owner |
+| learner@qubit.demo | Activated learner with approved Complete Repair Institute package |
 | student9@qubit.demo | Learner awaiting activation / payment review |
-| olivia@qubit.demo | Faculty demo (Dr. Ananya Rao) |
+| olivia@qubit.demo | Trainer demo |
 | support@qubit.demo | Support demo |
 | finance@qubit.demo | Finance demo |
 
@@ -64,17 +64,17 @@ These are public prototype credentials and synthetic records. Register a new lea
 
 ## Install the Android learner APK
 
-Download [Qubit-Coaching-debug.apk](https://github.com/infinixsys/Qubit-lms-proto-app/releases/download/android-prototype-2026-10-22-r2/Qubit-Coaching-debug.apk) from the [GitHub release](https://github.com/infinixsys/Qubit-lms-proto-app/releases/tag/android-prototype-2026-10-22-r2), or build one as below. Transfer it to your Android phone and allow installation from the app used to open the APK. The APK has Android API 23 as its install minimum and targets API 35. Use an up-to-date Android System WebView; testing on your target phone is still required. The local test APK permits HTTP to your development computer; it is not a Play Store release.
+Download [Refix-India-Institute-debug.apk](https://github.com/infinixsys/Qubit-lms-proto-app/releases/download/android-prototype-refix-2026-10-22/Refix-India-Institute-debug.apk) from the [GitHub release](https://github.com/infinixsys/Qubit-lms-proto-app/releases/tag/android-prototype-refix-2026-10-22), or build one as below. Transfer it to your Android phone and allow installation from the app used to open the APK. The APK has Android API 23 as its install minimum and targets API 35. Use an up-to-date Android System WebView; testing on your target phone is still required. The local test APK permits HTTP to your development computer; it is not a Play Store release.
 
 1. Start `npm run dev:all` on your computer.
 2. Connect your phone and computer to the same Wi-Fi.
 3. In PowerShell run `ipconfig`; find the Wi-Fi adapter's **IPv4 Address**, for example `192.168.1.4`. Avoid virtual/VPN adapter addresses.
-4. Open the APK. On **Connect to your coaching**, enter `http://192.168.1.4:7310` using your actual address.
+4. Open the APK. On **Connect to your institute**, enter `http://192.168.1.4:7310` using your actual address.
 5. Tap **Connect & continue**, then sign in or create an account.
 
 `localhost` on a phone means the phone, not your computer. Android Emulator uses `http://10.0.2.2:7310`. If connection fails, open `http://YOUR-PC-IP:7310/api/v1/health` in the phone browser first; allow Node/port 7310 on the Windows **private network** firewall if necessary and check Wi-Fi client isolation. The dashboard can remain open on the computer.
 
-The server address is configurable in the APK; it is not hardcoded to a cloud machine. **Change coaching server** is available on the sign-in screen. Android sessions use the native HTTP transport and an AES-GCM encrypted session protected by Android Keystore. Account blocking and deactivation revoke server sessions and future protected media requests.
+The server address is configurable in the APK; it is not hardcoded to a cloud machine. **Change institute server** is available on the sign-in screen. Android sessions use the native HTTP transport and an AES-GCM encrypted session protected by Android Keystore. Account blocking and deactivation revoke server sessions and future protected media requests.
 
 ## Build an APK yourself on Windows
 
@@ -97,7 +97,7 @@ android\app\build\outputs\apk\debug\app-debug.apk
 
 On macOS/Linux the same npm command runs `./gradlew`. `npm run android:apk:https` builds the debug package with an HTTPS-only server selector. A store release additionally needs your private signing key, an HTTPS deployment and release testing. Never commit signing keys.
 
-## Try the coaching workflow
+## Try the institute workflow
 
 1. In the learner app, create an account, choose a package, and submit a UPI/bank reference or cash receipt details. A PDF/image receipt is optional. Payment processing is **manual**; the app does not charge or verify UPI with a bank.
 2. Owner → **Admissions** → review payment, confirm collection, approve the subscription. Activate the learner at approval time or separately in **Learners → Manage**.
@@ -108,7 +108,7 @@ On macOS/Linux the same npm command runs `./gradlew`. `npm run android:apk:https
 
 ## Data, backups and limits
 
-SQLite lives at `Qubit-lms-proto-cp/.data/qubit.sqlite`; uploaded files live at `.data/uploads/`. Both are private local data and ignored by Git. Initial coaching content is added with repeat-safe migrations; existing records are preserved. Photos are generated sample imagery. The short sample lecture and workbook demonstrate delivery, not a complete exam syllabus.
+SQLite lives at `Qubit-lms-proto-cp/.data/qubit.sqlite`; uploaded files live at `.data/uploads/`. Both are private local data and ignored by Git. Initial institute content is added with repeat-safe migrations; existing records are preserved. Photos are generated sample imagery. The original 36-second visual classes and diagnosis workbook demonstrate delivery; they are not complete professional repair qualifications.
 
 Run `npm run backup` in the CP checkout for a verified SQLite snapshot under `.data/backups/`. Also back up `.data/uploads/`: the database snapshot alone does not contain video/document bytes. A copy of the SQLite file is not an offsite backup service.
 
@@ -121,3 +121,17 @@ The prototype uses manual payment approval, local SQLite/storage, public demo us
 ## Checks
 
 CP: `npm test`, `npm run build`, `npm run format:check`. App: `npm run build`, `npm run format:check`, `npm run android:apk`. Integration/browser tests live in CP: `npx playwright install chromium` then `npm run test:e2e` with both sibling repositories installed. Browser tests create synthetic local records.
+
+## Refix repair institute demo
+
+Pull **both** repositories and restart `npm run dev:all`. Repair courses and media are added automatically by an idempotent database migration. Do not delete your existing `.data` folder. The four untouched bundled exam courses move to Archived; their published versions, progress and payment history are retained. Owner-authored and edited courses remain intact. The media files in `server/assets/` are original prototype teaching samples.
+
+The six repair programs cover laptop diagnosis, mobile boards, soldering, desktop motherboards, electronics and repair-workshop business. Three demo INR packages cover laptop, mobile and complete institute access. Realistic generated photos illustrate fictional technicians; they are not verified photos of the client's staff or premises.
+
+Owner navigation adds **Training batches** and **Practical reviews**. Open a learner's name → **Access & device controls** to grant complimentary course access with an expiry or sign out all devices. Grants require both learner-management and billing permissions and do not add paid revenue. Activate accounts separately; paid package approval still requires manual payment verification. The Admissions page exports the actual subscription ledger as CSV.
+
+In a course, **Duplicate**, **Archive course / Restore draft**, and **Arrange curriculum** provide additional controls. Ordering or removing lessons changes the draft only; existing published versions stay intact. Publish a new version after owner review, then explicitly upgrade existing enrolments when appropriate.
+
+Learners open **Repair bench** on Home or **Practical lab & batches** in You. Submit written bench observations for an enrolled, approved course. The trainer reviews the work as Changes requested or Competent, with feedback and a score. This is a written-observation workflow; photo/video evidence upload, attendance tracking and a professional-certification process are not included.
+
+Client website inspection was blocked by this cloud environment's network policy. The Refix institute wordmark and navy/blue/copper design are a proposed visual direction, not a verified reproduction of refixindia.com.

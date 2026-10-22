@@ -147,7 +147,7 @@ export default function App() {
             <Icon name="Shapes" size={21} />
           </span>
           <div>
-            <strong>Qubit Academy</strong>
+            <strong>Qubit Institute</strong>
             <small>Learning, connected.</small>
           </div>
           <Icon name="ChevronsUpDown" size={15} />

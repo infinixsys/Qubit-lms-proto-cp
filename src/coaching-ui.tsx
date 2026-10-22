@@ -46,7 +46,7 @@ export function CoursePhoto({
           ? absoluteApiPath(cover.data.url)
           : c.image || "/images/physics.png"
       }
-      alt={c.category + " coaching course"}
+      alt={c.category + " institute course"}
       loading="lazy"
     />
   );

@@ -1,4 +1,5 @@
 import { DatabaseSync } from "node:sqlite";
+import { seedAcademy } from "./academy-data.mjs";
 import { seedCoaching } from "./coaching-data.mjs";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
@@ -229,6 +230,7 @@ export function openDb(path = process.env.DB_PATH || DEFAULT_DB_PATH) {
   }
   const store = { db, get, list, put, audit, path };
   seedCoaching(store, hashPassword);
+  seedAcademy(store);
   return store;
 }
 export const safeUser = (u) => {

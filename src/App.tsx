@@ -42,11 +42,20 @@ import {
   AssetUpload,
   ResourceViewer,
 } from "./coaching-ui";
+import {
+  Batches,
+  Practicals,
+  LearnerAccess,
+  CourseControls,
+  BillingExport,
+} from "./academy";
 import { ResourcePage, Audit, Operations } from "./Legacy";
 const navigation = [
   ["/", "Overview", "LayoutDashboard", "analytics"],
   ["/learners", "Learners", "UsersRound", "users"],
   ["/courses", "Courses", "BookOpen", "courses"],
+  ["/batches", "Training batches", "UsersRound", "courses"],
+  ["/practicals", "Practical reviews", "ClipboardList", "assessments"],
   ["/admissions", "Admissions", "ClipboardList", "billing"],
   ["/packages", "Packages", "CreditCard", "billing"],
   ["/reports", "Reports", "ChartNoAxesCombined", "analytics"],
@@ -56,7 +65,7 @@ function Heading({
   title,
   text,
   action,
-  eyebrow = "COACHING WORKSPACE",
+  eyebrow = "INSTITUTE WORKSPACE",
 }: {
   title: string;
   text?: string;
@@ -102,20 +111,20 @@ function Login({ done }: { done: (d: Row) => void }) {
       <section>
         <Brand />
         <div>
-          <span className="eyebrow">BUILT FOR YOUR COACHING CENTRE</span>
+          <span className="eyebrow">BUILT FOR REPAIR TRAINING</span>
           <h1>
-            Great teaching.
+            Real skills.
             <br />A clear view of
             <br />
-            <em>everything else.</em>
+            <em>a stronger institute.</em>
           </h1>
           <p>
-            Your learners, courses and coaching business.
+            Your learners, courses and training business.
             <br />
             One thoughtfully connected workspace.
           </p>
         </div>
-        <small>Qubit Coaching · India</small>
+        <small>Refix India Institute · India</small>
       </section>
       <main>
         <div className="login-box">
@@ -123,7 +132,7 @@ function Login({ done }: { done: (d: Row) => void }) {
             <Icon name="GraduationCap" size={30} />
           </span>
           <h2>Welcome to your workspace</h2>
-          <p>Sign in to manage your coaching centre.</p>
+          <p>Sign in to manage your training institute.</p>
           <Form
             fields={[
               {
@@ -178,17 +187,17 @@ export default function App() {
         Skip to content
       </a>
       <aside className="owner-sidebar">
-        <Link to="/" aria-label="Qubit overview">
+        <Link to="/" aria-label="Refix institute overview">
           <Brand />
         </Link>
         <div className="workspace-label">
-          <span className="workspace-logo">QC</span>
+          <span className="workspace-logo">RI</span>
           <div>
-            Qubit Coaching<small>Owner workspace</small>
+            Refix India Institute<small>Owner workspace</small>
           </div>
           <Icon name="ChevronsUpDown" size={15} />
         </div>
-        <span className="nav-label">MANAGE YOUR COACHING</span>
+        <span className="nav-label">MANAGE YOUR INSTITUTE</span>
         <nav aria-label="Main navigation">
           {navigation
             .filter((n) => can(n[3]))
@@ -207,7 +216,7 @@ export default function App() {
         <div className="sidebar-bottom">
           <div className="owner-help">
             <Icon name="HeartHandshake" />
-            <strong>A little help goes a long way</strong>
+            <strong>Keep the repair bench moving</strong>
             <p>Keep your team and learners moving forward.</p>
             <Link to="/tools/tickets">
               Support workspace <Icon name="ArrowUpRight" size={15} />
@@ -219,7 +228,7 @@ export default function App() {
               <strong>{session.user.name}</strong>
               <small>
                 {session.user.role === "Super Admin"
-                  ? "Coaching owner"
+                  ? "Institute owner"
                   : session.user.role}
               </small>
             </div>
@@ -247,7 +256,7 @@ export default function App() {
             <Icon name="Menu" />
           </button>
           <span>
-            <Icon name="Building2" size={17} /> Your coaching, connected
+            <Icon name="Building2" size={17} /> Your institute, connected
           </span>
           <div>
             <span className="india-clock">
@@ -288,6 +297,8 @@ export default function App() {
             <Route path="/learners" element={<Learners />} />
             <Route path="/courses" element={<Courses />} />
             <Route path="/courses/:id" element={<CourseEditor />} />
+            <Route path="/batches" element={<Batches />} />
+            <Route path="/practicals" element={<Practicals />} />
             <Route path="/admissions" element={<Admissions />} />
             <Route path="/packages" element={<Packages />} />
             <Route path="/reports" element={<Reports />} />
@@ -302,8 +313,8 @@ export default function App() {
           </Routes>
         </main>
         <footer className="owner-footer">
-          Thoughtfully built for better learning.
-          <span>Qubit Coaching · India</span>
+          Built for practical skills and better repairs.
+          <span>Refix India Institute · India</span>
         </footer>
       </div>
     </div>
@@ -316,8 +327,8 @@ function RevenueChart({ data }: { data: Row[] }) {
         <AreaChart data={data}>
           <defs>
             <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#0c8274" stopOpacity={0.2} />
-              <stop offset="100%" stopColor="#0c8274" stopOpacity={0} />
+              <stop offset="0%" stopColor="#326ada" stopOpacity={0.2} />
+              <stop offset="100%" stopColor="#326ada" stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid
@@ -343,7 +354,7 @@ function RevenueChart({ data }: { data: Row[] }) {
           <Area
             type="monotone"
             dataKey="revenue"
-            stroke="#0c8274"
+            stroke="#326ada"
             strokeWidth={2.5}
             fill="url(#revenueFill)"
             name="Recorded revenue"
@@ -366,9 +377,9 @@ function Overview() {
   return (
     <>
       <Heading
-        eyebrow="A GOOD DAY TO MAKE A DIFFERENCE"
-        title="Your coaching, at a glance"
-        text="A clear picture of your learners and business. All in one place."
+        eyebrow="REFIX INDIA / OWNER OVERVIEW"
+        title="Your institute, at a glance"
+        text="Your learners, repair courses and training business. One clear view."
         action={
           <Link className="btn primary" to="/courses">
             <Icon name="Plus" size={17} />
@@ -378,8 +389,8 @@ function Overview() {
       />
       <div className="overview-welcome">
         <div>
-          <span className="eyebrow">KEEP THE MOMENTUM GOING</span>
-          <h2>More clarity. More room to grow.</h2>
+          <span className="eyebrow">YOUR REPAIR TRAINING BUSINESS</span>
+          <h2>Build skills. Run a stronger institute.</h2>
           <p>
             {c.activePaidUsers} paid learners are learning with you.
             <br />
@@ -392,12 +403,12 @@ function Overview() {
         </div>
         <div className="welcome-art">
           <img
-            src="/images/physics.png"
-            alt="Physics educator in an Indian classroom"
+            src="/images/repair-laptop.jpg"
+            alt="Repair technician training at the laptop bench"
           />
           <span>
             <Icon name="GraduationCap" />
-            Every learner counts.
+            Skills that go to work.
           </span>
         </div>
       </div>
@@ -755,6 +766,13 @@ function Learners() {
                   lessons completed
                 </span>
               </div>
+              <LearnerAccess
+                learner={selected}
+                changed={() => {
+                  details.reload();
+                  d.reload();
+                }}
+              />
               <h3>Subscriptions</h3>
               {details.data.subscriptions.length ? (
                 details.data.subscriptions.map((s: Row) => (
@@ -833,6 +851,7 @@ function Admissions() {
     <>
       <Heading
         title="Admissions & subscriptions"
+        action={<BillingExport />}
         text="Verify payments, approve packages and keep renewals on track."
       />
       <div className="coach-panel">
@@ -991,7 +1010,7 @@ function Admissions() {
         )}
       </div>
       <p className="subtle-note">
-        Payments are verified manually by your coaching team. Approval records
+        Payments are verified manually by your institute team. Approval records
         the payment; it does not charge a card or process a UPI transfer.
       </p>
       {review && (
@@ -1146,6 +1165,7 @@ function Packages() {
     courses = useData("/admin/courses"),
     toast = useToast();
   const [edit, setEdit] = useState<Row | null>(null),
+    [packageStatus, setPackageStatus] = useState("Active"),
     [ids, setIds] = useState<string[]>([]);
   const fields: Field[] = [
     { name: "name", label: "Package name", required: true },
@@ -1174,7 +1194,7 @@ function Packages() {
     <>
       <Heading
         title="Packages & pricing"
-        text="Clear choices for learners. Flexible plans for your coaching."
+        text="Clear choices for learners. Flexible plans for your institute."
         action={
           <button
             className="btn primary"
@@ -1188,48 +1208,63 @@ function Packages() {
           </button>
         }
       />
+      <div className="filter-tabs page-tabs">
+        {["Active", "Archived", "All"].map((status) => (
+          <button
+            key={status}
+            className={packageStatus === status ? "selected" : ""}
+            onClick={() => setPackageStatus(status)}
+          >
+            {status}
+          </button>
+        ))}
+      </div>
       {d.error ? (
         <ErrorState error={d.error} />
       ) : !d.data ? (
         <Loading />
       ) : (
         <div className="package-grid">
-          {d.data.map((p: Row, i: number) => (
-            <article
-              key={p.id}
-              className={"package-card " + (i === 2 ? "featured" : "")}
-            >
-              <div className="card-top">
-                <span className="soft-icon">
-                  <Icon name={i === 2 ? "Sparkles" : "BookOpen"} />
-                </span>
-                <Badge>{p.status}</Badge>
-              </div>
-              <h2>{p.name}</h2>
-              <p>{p.description}</p>
-              <div className="package-price">
-                {money(p.price)}
-                <small>/ {p.validityDays} days</small>
-              </div>
-              <ul>
-                {p.courseIds.map((id: string) => (
-                  <li key={id}>
-                    <Icon name="Check" size={16} />
-                    {courses.data?.find((c: Row) => c.id === id)?.title || id}
-                  </li>
-                ))}
-              </ul>
-              <button
-                className="btn"
-                onClick={() => {
-                  setEdit(p);
-                  setIds(p.courseIds);
-                }}
+          {d.data
+            .filter(
+              (p: Row) => packageStatus === "All" || p.status === packageStatus,
+            )
+            .map((p: Row, i: number) => (
+              <article
+                key={p.id}
+                className={"package-card " + (i === 2 ? "featured" : "")}
               >
-                Edit package <Icon name="ArrowRight" size={16} />
-              </button>
-            </article>
-          ))}
+                <div className="card-top">
+                  <span className="soft-icon">
+                    <Icon name={i === 2 ? "Sparkles" : "BookOpen"} />
+                  </span>
+                  <Badge>{p.status}</Badge>
+                </div>
+                <h2>{p.name}</h2>
+                <p>{p.description}</p>
+                <div className="package-price">
+                  {money(p.price)}
+                  <small>/ {p.validityDays} days</small>
+                </div>
+                <ul>
+                  {p.courseIds.map((id: string) => (
+                    <li key={id}>
+                      <Icon name="Check" size={16} />
+                      {courses.data?.find((c: Row) => c.id === id)?.title || id}
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  className="btn"
+                  onClick={() => {
+                    setEdit(p);
+                    setIds(p.courseIds);
+                  }}
+                >
+                  Edit package <Icon name="ArrowRight" size={16} />
+                </button>
+              </article>
+            ))}
         </div>
       )}
       <p className="subtle-note">
@@ -1284,13 +1319,21 @@ const courseFields: Field[] = [
   { name: "title", label: "Course title", required: true },
   {
     name: "category",
-    label: "Exam category",
+    label: "Repair specialisation",
     type: "select",
-    options: ["JEE", "NEET", "UPSC", "CBSE", "SSC", "Banking", "Other"],
+    options: [
+      "Laptop repair",
+      "Mobile repair",
+      "Computer hardware",
+      "Soldering",
+      "Electronics",
+      "Workshop business",
+      "Other",
+    ],
     required: true,
   },
-  { name: "level", label: "Class or level", required: true },
-  { name: "instructor", label: "Faculty name", required: true },
+  { name: "level", label: "Skill level", required: true },
+  { name: "instructor", label: "Trainer name", required: true },
   { name: "batch", label: "Batch name", required: true },
   { name: "language", label: "Teaching language", required: true },
   {
@@ -1315,13 +1358,14 @@ function Courses() {
   const rows = (d.data || []).filter(
     (c: Row) =>
       c.coaching &&
+      !c.legacyDemo &&
       c.title.toLowerCase().includes(query.toLowerCase()) &&
       (status === "All" || c.status === status),
   );
   return (
     <>
       <Heading
-        title="Built for the next big step"
+        title="Your repair course library"
         eyebrow="YOUR COURSE LIBRARY"
         text="Create, organise and publish learning that makes a difference."
         action={
@@ -1410,8 +1454,8 @@ function Courses() {
           <Form
             fields={courseFields}
             initial={{
-              category: "JEE",
-              level: "Class 11–12",
+              category: "Laptop repair",
+              level: "Beginner",
               language: "Hindi + English",
             }}
             label="Create course draft"
@@ -1499,6 +1543,14 @@ function CourseEditor() {
             )}
           </div>
         }
+      />
+      <CourseControls
+        course={c}
+        lessons={lessons.data || []}
+        changed={() => {
+          all.reload();
+          lessons.reload();
+        }}
       />
       <div className="filter-tabs page-tabs">
         {["Curriculum", "Course details", "Cover image"].map((t) => (
@@ -1879,7 +1931,7 @@ function Reports() {
     <>
       <Heading
         title="A clearer picture of progress"
-        eyebrow="COACHING ANALYTICS"
+        eyebrow="INSTITUTE ANALYTICS"
         text="Understand admissions, revenue and learning activity."
         action={
           <select
@@ -2041,13 +2093,13 @@ function Workspace({ can }: { can: (s: string) => boolean }) {
     [
       "/audit",
       "Audit trail",
-      "See who changed what across your coaching.",
+      "See who changed what across your institute.",
       "Activity",
       "audit",
     ],
     [
       "/settings",
-      "Coaching settings",
+      "Institute settings",
       "Manage your identity and payment instructions.",
       "Building2",
       "settings",
@@ -2055,7 +2107,7 @@ function Workspace({ can }: { can: (s: string) => boolean }) {
     [
       "/operations",
       "Backup & operations",
-      "Keep your local coaching data backed up.",
+      "Keep your local institute data backed up.",
       "DatabaseBackup",
       "settings",
     ],
@@ -2304,7 +2356,7 @@ function Permissions() {
       {staff && (
         <Modal
           title={"Access for " + staff.name}
-          subtitle="The coaching owner must confirm their password. This signs the staff member out."
+          subtitle="The institute owner must confirm their password. This signs the staff member out."
           onClose={() => setStaff(null)}
         >
           <Form
@@ -2435,8 +2487,8 @@ function Settings() {
   return (
     <>
       <Heading
-        title="Make it your coaching"
-        eyebrow="COACHING SETTINGS"
+        title="Institute settings"
+        eyebrow="INSTITUTE SETTINGS"
         text="The details learners see in their app and subscription journey."
       />
       <section className="coach-panel settings-panel">
@@ -2447,7 +2499,7 @@ function Settings() {
         ) : (
           <Form
             fields={[
-              { name: "name", label: "Coaching centre name", required: true },
+              { name: "name", label: "Institute name", required: true },
               { name: "tagline", label: "Tagline" },
               { name: "city", label: "City & state" },
               { name: "supportPhone", label: "Support phone (+91)" },
@@ -2473,7 +2525,7 @@ function Settings() {
                 supportPhone: v.supportPhone || "",
               });
               d.reload();
-              toast("Coaching details saved.");
+              toast("Institute details saved.");
             }}
           />
         )}

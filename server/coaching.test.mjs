@@ -62,7 +62,7 @@ const jsonOK = (r) => {
   assert.equal(r.statusCode, 200, r.body);
   return r.json();
 };
-async function apply(s, p = "pkg-jee") {
+async function apply(s, p = "pkg-laptop") {
   return jsonOK(
     await req(
       "POST",
@@ -99,7 +99,7 @@ test("coaching access requires both an approved subscription and account activat
     id = s.data.user.id;
   assert.equal(s.data.user.status, "Pending activation");
   assert.equal(
-    (await req("GET", "/lessons/jee-physics-2027-lesson-1", undefined, s))
+    (await req("GET", "/lessons/laptop-diagnostics-lesson-1", undefined, s))
       .statusCode,
     403,
   );
@@ -110,7 +110,7 @@ test("coaching access requires both an approved subscription and account activat
       await req(
         "POST",
         "/coaching/requests",
-        { packageId: "pkg-jee", paymentMethod: "Cash" },
+        { packageId: "pkg-laptop", paymentMethod: "Cash" },
         s,
       ),
     ).id,
@@ -128,7 +128,7 @@ test("coaching access requires both an approved subscription and account activat
   );
   await approve(a, false);
   assert.equal(
-    (await req("GET", "/lessons/jee-physics-2027-lesson-1", undefined, s))
+    (await req("GET", "/lessons/laptop-diagnostics-lesson-1", undefined, s))
       .statusCode,
     403,
   );
@@ -139,12 +139,12 @@ test("coaching access requires both an approved subscription and account activat
     }),
   );
   assert.equal(
-    (await req("GET", "/lessons/jee-physics-2027-lesson-1", undefined, s))
+    (await req("GET", "/lessons/laptop-diagnostics-lesson-1", undefined, s))
       .statusCode,
     200,
   );
   assert.equal(
-    (await req("GET", "/lessons/neet-biology-2027-lesson-1", undefined, s))
+    (await req("GET", "/lessons/mobile-board-repair-lesson-1", undefined, s))
       .statusCode,
     403,
   );
@@ -153,10 +153,10 @@ test("package snapshots, payment references, approval idempotency and renewal da
   const s = await student(),
     a = await apply(s),
     p = jsonOK(await req("GET", "/owner/packages")).find(
-      (p) => p.id === "pkg-jee",
+      (p) => p.id === "pkg-laptop",
     );
   jsonOK(
-    await req("PATCH", "/owner/packages/pkg-jee", {
+    await req("PATCH", "/owner/packages/pkg-laptop", {
       name: p.name,
       description: p.description,
       price: 3999,
@@ -174,7 +174,7 @@ test("package snapshots, payment references, approval idempotency and renewal da
     ),
   );
   const sub = await approve(a);
-  assert.equal(sub.paidAmount, 2499);
+  assert.equal(sub.paidAmount, p.price);
   assert.equal(
     Math.round((Date.parse(sub.expires) - Date.parse(sub.starts)) / 86400000),
     90,
@@ -192,7 +192,7 @@ test("package snapshots, payment references, approval idempotency and renewal da
     1,
   );
   jsonOK(
-    await req("PATCH", "/owner/packages/pkg-jee", {
+    await req("PATCH", "/owner/packages/pkg-laptop", {
       name: p.name,
       description: p.description,
       price: p.price,
@@ -207,7 +207,7 @@ test("private media supports seeking and block/cancel/expiry revoke issued media
     a = await apply(s),
     sub = await approve(a),
     access = jsonOK(
-      await req("GET", "/assets/sample-physics-video/access", undefined, s),
+      await req("GET", "/assets/repair-laptop-video/access", undefined, s),
     );
   assert.equal(access.diskPath, undefined);
   const url = access.url.replace("/api/v1", "");
@@ -442,13 +442,13 @@ test("native bearer sessions, course-specific questions and analytics reflect se
   });
   assert.equal(r.statusCode, 200);
   const quiz = jsonOK(
-    await req("POST", "/quizzes/jee-physics-2027/attempts", {}, s),
+    await req("POST", "/quizzes/laptop-diagnostics/attempts", {}, s),
   );
   assert.equal(quiz.questions.length, 5);
   assert.ok(
     quiz.questions.every(
       (q) =>
-        q.courseId === "jee-physics-2027" &&
+        q.courseId === "laptop-diagnostics" &&
         q.answer === undefined &&
         q.explanation === undefined,
     ),
@@ -463,13 +463,13 @@ test("native bearer sessions, course-specific questions and analytics reflect se
 });
 test("a shared workbook is available through any included course and upgrades preserve published versions", async () => {
   const s = await student();
-  await approve(await apply(s, "pkg-neet"));
+  await approve(await apply(s, "pkg-mobile"));
   assert.equal(
-    (await req("GET", "/assets/sample-study-pdf/access", undefined, s))
+    (await req("GET", "/assets/repair-workbook/access", undefined, s))
       .statusCode,
     200,
   );
-  const c = app.store.get("courses", "neet-biology-2027");
+  const c = app.store.get("courses", "mobile-board-repair");
   jsonOK(await req("POST", "/admin/courses/" + c.id + "/new-version"));
   const l = jsonOK(
     await req("POST", "/admin/courses/" + c.id + "/lessons", {

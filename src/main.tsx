@@ -13,6 +13,7 @@ import { ToastProvider, ErrorBoundary } from "./ui";
 import App from "./App";
 import "./styles.css";
 import "./coaching.css";
+import "./academy.css";
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>

@@ -1,26 +1,29 @@
-# Qubit Coaching · Owner dashboard & API
+# Refix India Institute · Owner dashboard
 
-A working Indian coaching prototype with a separate Android learner app in [Qubit-lms-proto-app](https://github.com/infinixsys/Qubit-lms-proto-app). The shared Fastify/SQLite API stays in this repository.
-
-Start with [LOCAL_SETUP.md](LOCAL_SETUP.md) for Windows setup, APK connection, accounts, backups and limitations.
+A hardware-repair training institute workspace with a separate Android learner app. The shared Fastify/SQLite backend stays in this repository. Start here: [LOCAL_SETUP.md](LOCAL_SETUP.md).
 
 ```sh
 npm ci
+npm ci --prefix ../Qubit-lms-proto-app
 npm run dev:all
 ```
 
-Install the adjacent app's dependencies first. API uses 7310; owner dashboard 7311; learner preview 7312. Node 24 is required. Owner demo: `admin@qubit.demo` / `QubitDemo2026!`.
+Owner: http://localhost:7311 · learner preview: http://localhost:7312 · API: http://localhost:7310/api/v1/health
 
-## Coaching operations
+Demo owner: `admin@qubit.demo` / `QubitDemo2026!`. Demo learner: `learner@qubit.demo` with the same password.
 
-- Live database counts for accounts, active paid learners, recent online presence, pending payment/approval/activation and upcoming renewals.
-- INR packages with course access and validity, recorded payment verification, explicit subscription approval, renewal scheduling, cancellations and separate account activation.
-- Learner search, progress, assessments, active/inactive/blocked states and immediate session revocation.
-- Course drafts, faculty/batch/language, uploaded cover photos, reading/video/image/document lessons, review and publishing, immutable versions and explicit upgrades for enrolled learners.
-- Private multipart media uploads, byte-range video playback, PDF rendering, Word text previews and original-file downloads. Access is rechecked against account, package, tenant and course version.
-- Staff accounts, custom roles, owner-confirmed grants, permission enforcement, announcements, question bank, assignments/feedback, live-class links, support and audit history.
-- Clean navy/teal navigation with bundled Inter, Plus Jakarta Sans and Devanagari fonts, and realistic generated Indian course photos.
+The workspace includes:
 
-`npm test` exercises authentication, tenant boundaries, approvals, assets, subscription expiry, blocking, staff roles, course versions, quizzes and Windows paths. `npm run test:e2e` covers both products, real video/PDF/Word delivery, offline reading and accessibility checks.
+- Real learner, payment, online-presence, renewal and course-engagement analytics.
+- Account activation, deactivation and blocking; device sign-outs; audited, time-limited complimentary access.
+- INR packages, manual payment/receipt verification, approval/rejection, cancellation/restore and a CSV subscription ledger.
+- Repair-course authoring, video/image/PDF/Word uploads, private playback, duplication, archive/restore, draft curriculum ordering/removal and immutable published versions.
+- Capacity-checked training batches, trainer schedules and learner membership; membership does not bypass package access.
+- Written practical submissions with trainer decisions, scores and feedback visible in the learner app.
+- Staff accounts, custom permissions, support, question bank, live-session links, institute settings, audit and backups.
 
-This is a local prototype. Payments are verified manually; no bank, email, push or production AI provider is connected. Demo content and public credentials are included for exploration. See the setup guide before release or deployment.
+Six demo programs cover mobile, laptop/computer repairs, electronics, soldering and workshop operations. Generated workshop photos, two original short visual demo classes, a PDF workbook and a diagnosis diagram are bundled. They demonstrate the prototype and are not a complete training syllabus or verified client assets.
+
+`npm test` runs backend regressions. `npm run test:e2e` exercises both interfaces, uploads, approvals, video/PDF rendering, offline expiry and practical reviews. `npm run build` and `npm run format:check` validate the web source. Payments are manually reviewed; production payment processing and outbound messaging are not connected.
+
+[Download the Android prototype](https://github.com/infinixsys/Qubit-lms-proto-app/releases/download/android-prototype-refix-2026-10-22/Refix-India-Institute-debug.apk) · [Release notes](https://github.com/infinixsys/Qubit-lms-proto-app/releases/tag/android-prototype-refix-2026-10-22).

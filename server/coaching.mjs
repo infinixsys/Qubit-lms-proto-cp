@@ -66,7 +66,7 @@ export function assertCoachingAccess(store, u, c) {
   if (u.status !== "Active")
     error(
       403,
-      "Your coaching owner needs to activate your account before you can learn.",
+      "Your institute owner needs to activate your account before you can learn.",
       "ACTIVATION_REQUIRED",
     );
   if (
@@ -76,7 +76,7 @@ export function assertCoachingAccess(store, u, c) {
   )
     error(
       403,
-      "An approved, active package is required for this course. Check My subscription or contact your coaching centre.",
+      "An approved, active package is required for this course. Check My subscription or contact your institute centre.",
       "SUBSCRIPTION_REQUIRED",
     );
 }
@@ -177,37 +177,43 @@ export async function registerCoaching({
     const u = auth(req),
       subs = activeSubscriptions(store, u.id),
       progress = db.prepare("SELECT * FROM progress WHERE user_id=?").all(u.id);
-    return courseRows(u).map((c) => {
-      const enrollment = db
-        .prepare(
-          "SELECT * FROM enrolments WHERE user_id=? AND course_id=? AND state='Active'",
-        )
-        .get(u.id, c.id);
-      const ls = enrollment
-        ? get("versions", c.id + "-v" + enrollment.version)?.lessons || []
-        : list("lessons", u.tenant).filter((l) => l.courseId === c.id);
-      const completed = ls.filter((l) =>
-        progress.some((p) => p.lesson_id === l.id && p.completed),
-      ).length;
-      const hasPackage = subs.some((s) =>
-        JSON.parse(s.course_ids).includes(c.id),
-      );
-      return {
-        ...c,
-        joined: !!enrollment,
-        hasPackage,
-        accessible: hasPackage && u.status === "Active",
-        completed,
-        total: ls.length,
-        progress: Math.round((completed / (ls.length || 1)) * 100),
-        expires:
-          subs
-            .filter((s) => JSON.parse(s.course_ids).includes(c.id))
-            .map((s) => s.expires)
-            .sort()
-            .at(-1) || null,
-      };
-    });
+    return courseRows(u)
+      .sort(
+        (a, b) =>
+          Number(!!b.academy) - Number(!!a.academy) ||
+          a.title.localeCompare(b.title),
+      )
+      .map((c) => {
+        const enrollment = db
+          .prepare(
+            "SELECT * FROM enrolments WHERE user_id=? AND course_id=? AND state='Active'",
+          )
+          .get(u.id, c.id);
+        const ls = enrollment
+          ? get("versions", c.id + "-v" + enrollment.version)?.lessons || []
+          : list("lessons", u.tenant).filter((l) => l.courseId === c.id);
+        const completed = ls.filter((l) =>
+          progress.some((p) => p.lesson_id === l.id && p.completed),
+        ).length;
+        const hasPackage = subs.some((s) =>
+          JSON.parse(s.course_ids).includes(c.id),
+        );
+        return {
+          ...c,
+          joined: !!enrollment,
+          hasPackage,
+          accessible: hasPackage && u.status === "Active",
+          completed,
+          total: ls.length,
+          progress: Math.round((completed / (ls.length || 1)) * 100),
+          expires:
+            subs
+              .filter((s) => JSON.parse(s.course_ids).includes(c.id))
+              .map((s) => s.expires)
+              .sort()
+              .at(-1) || null,
+        };
+      });
   });
   app.get("/api/v1/coaching/me", async (req) => {
     const u = auth(req);
@@ -528,7 +534,7 @@ export async function registerCoaching({
       if (row.tenant !== u.tenant)
         error(
           403,
-          "Package and course must belong to the same coaching centre.",
+          "Package and course must belong to the same institute centre.",
         );
     }
     db.exec("BEGIN");
@@ -639,7 +645,7 @@ export async function registerCoaching({
     for (const cid of b.courseIds) {
       const c = scoped({ user: u }, "courses", cid);
       if (c.status !== "Published" || !c.coaching)
-        error(400, "Choose published coaching courses for the package.");
+        error(400, "Choose published institute courses for the package.");
     }
     db.prepare(
       "INSERT INTO coaching_packages VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,price_paise=excluded.price_paise,validity_days=excluded.validity_days,description=excluded.description,course_ids=excluded.course_ids,status=excluded.status",
@@ -708,7 +714,7 @@ export async function registerCoaching({
       };
     });
     const courses = list("courses", u.tenant)
-      .filter((c) => c.coaching)
+      .filter((c) => c.coaching && !c.legacyDemo)
       .map((c) => {
         const enrolled = db
           .prepare(
@@ -799,7 +805,7 @@ export async function registerCoaching({
     if (u.role !== "Super Admin" || !verifyPassword(b.password, u.password))
       error(
         403,
-        "The coaching owner must confirm their password to create staff access.",
+        "The institute owner must confirm their password to create staff access.",
       );
     if (
       db
@@ -877,7 +883,7 @@ export async function registerCoaching({
     if (u.role !== "Super Admin" || !verifyPassword(b.password, u.password))
       error(
         403,
-        "The coaching owner must confirm their password to change staff access.",
+        "The institute owner must confirm their password to change staff access.",
       );
     if (target.role === "Super Admin" || target.role === "Learner")
       error(409, "Owner and learner roles cannot be changed here.");
@@ -922,20 +928,20 @@ export async function registerCoaching({
         })
         .strict()
         .parse(req.body);
-    audit(u, "Coaching settings updated", "coaching");
+    audit(u, "Institute settings updated", "coaching");
     return put("settings", { ...settings(), ...b });
   });
   app.post("/api/v1/owner/courses/:id/upgrade-enrolments", async (req) => {
     const u = permit(req, "courses"),
       c = scoped(req, "courses", req.params.id);
     if (!["Super Admin", "Tenant Admin"].includes(u.role))
-      error(403, "The coaching owner must approve course-version changes.");
+      error(403, "The institute owner must approve course-version changes.");
     const b = z
       .object({ confirm: z.literal(true), reason: z.string().min(3).max(1000) })
       .strict()
       .parse(req.body);
     if (!c.coaching || c.status !== "Published")
-      error(409, "Publish the latest coaching course version first.");
+      error(409, "Publish the latest institute course version first.");
     const result = db
       .prepare(
         "UPDATE enrolments SET version=? WHERE course_id=? AND version<? AND user_id IN (SELECT id FROM users WHERE tenant=?)",

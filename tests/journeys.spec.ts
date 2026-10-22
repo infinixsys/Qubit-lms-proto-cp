@@ -6,7 +6,7 @@ async function owner(page: any) {
   await page.goto(cp);
   await page.getByRole("button", { name: "Sign in to dashboard" }).click();
   await expect(
-    page.getByRole("heading", { name: "Your coaching, at a glance" }),
+    page.getByRole("heading", { name: "Your institute, at a glance" }),
   ).toBeVisible();
 }
 async function learner(page: any) {
@@ -42,7 +42,7 @@ test("new learner requests a package; owner verifies payment, activates separate
     .locator(".package-card")
     .filter({
       has: l.getByRole("heading", {
-        name: "JEE Physics · 90 days",
+        name: "Laptop Technician",
         exact: true,
       }),
     })
@@ -70,7 +70,7 @@ test("new learner requests a package; owner verifies payment, activates separate
     .getByRole("button", { name: "Approve subscription", exact: true })
     .click();
   await expect(o.getByRole("dialog")).toHaveCount(0);
-  await l.goto(app + "/lesson/jee-physics-2027-lesson-1");
+  await l.goto(app + "/lesson/laptop-diagnostics-lesson-1");
   await expect(
     l.getByText(/owner needs to activate your account/),
   ).toBeVisible();
@@ -83,11 +83,11 @@ test("new learner requests a package; owner verifies payment, activates separate
     .fill("Identity verified by admissions");
   await o.getByRole("button", { name: "Save changes", exact: true }).click();
   await expect(o.getByRole("dialog")).toHaveCount(0);
-  await l.goto(app + "/course/jee-physics-2027");
+  await l.goto(app + "/course/laptop-diagnostics");
   await l.getByRole("button", { name: "Start learning", exact: true }).click();
   await expect(
     l.getByRole("heading", {
-      name: "Welcome to your physics journey",
+      name: "Start here · Your safe repair bench",
       exact: true,
     }),
   ).toBeVisible();
@@ -96,7 +96,7 @@ test("new learner requests a package; owner verifies payment, activates separate
     .click();
   await expect(
     l.getByRole("heading", {
-      name: "Newton’s laws · a quick revision",
+      name: "Laptop diagnosis · demo class",
       exact: true,
     }),
   ).toBeVisible();
@@ -125,16 +125,18 @@ test("owner creates a course, uploads a Word resource, previews and publishes it
   await page
     .getByRole("button", { name: "Create course", exact: true })
     .click();
-  const title = "JEE Mechanics " + Date.now();
+  const title = "Laptop Diagnostics " + Date.now();
   await page.getByLabel("Course title", { exact: true }).fill(title);
-  await page.getByLabel("Faculty name", { exact: true }).fill("Dr. Ananya Rao");
-  await page.getByLabel("Batch name", { exact: true }).fill("Lakshya 2027");
+  await page.getByLabel("Trainer name", { exact: true }).fill("Dr. Ananya Rao");
+  await page
+    .getByLabel("Batch name", { exact: true })
+    .fill("Refix Technician October");
   await page
     .getByLabel("About this course", { exact: true })
-    .fill("A focused mechanics revision course with accessible chapter notes.");
+    .fill("A practical laptop diagnostics course with accessible bench notes.");
   await page
     .getByLabel("Learning outcomes", { exact: true })
-    .fill("Explain Newton’s second law and draw free-body diagrams.");
+    .fill("Document a safe bench inspection and evidence-led diagnosis.");
   await page
     .getByRole("button", { name: "Create course draft", exact: true })
     .click();
@@ -150,20 +152,20 @@ test("owner creates a course, uploads a Word resource, previews and publishes it
     .check();
   await dialog
     .locator("input[type=file]")
-    .setInputFiles("server/assets/study-workbook.docx");
+    .setInputFiles("server/assets/repair-workbook.docx");
   await expect(
     dialog.getByText("Attached resources (1)", { exact: true }),
   ).toBeVisible();
   await dialog
     .getByLabel("Lesson title", { exact: true })
-    .fill("Newton’s laws revision workbook");
+    .fill("Repair diagnosis workbook");
   await dialog
     .getByLabel("Lesson format", { exact: true })
     .selectOption("Document");
   await dialog
     .getByLabel("Reading notes or video transcript", { exact: true })
     .fill(
-      "Read the attached workbook. Identify all external forces before applying Newton’s second law.",
+      "Read the attached workbook. Record the symptom, safety checks and observations before testing a training board.",
     );
   await dialog
     .getByLabel("I have permission to publish this lesson", { exact: true })
@@ -174,7 +176,7 @@ test("owner creates a course, uploads a Word resource, previews and publishes it
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.getByRole("button", { name: "Preview", exact: true }).click();
   await expect(
-    page.getByText("QUBIT COACHING | CHAPTER REVISION WORKBOOK", {
+    page.getByText("REFIX INDIA INSTITUTE | REPAIR DIAGNOSIS WORKBOOK", {
       exact: true,
     }),
   ).toBeVisible();
@@ -198,7 +200,7 @@ test("learner plays protected video and renders a real PDF on a narrow screen", 
 }) => {
   await page.setViewportSize({ width: 393, height: 852 });
   await learner(page);
-  await page.goto(app + "/lesson/jee-physics-2027-lesson-2");
+  await page.goto(app + "/lesson/laptop-diagnostics-lesson-2");
   const video = page.locator("video");
   await expect(video).toBeVisible();
   await expect
@@ -208,8 +210,8 @@ test("learner plays protected video and renders a real PDF on a narrow screen", 
   await expect
     .poll(() => video.evaluate((v: HTMLVideoElement) => v.currentTime))
     .toBeGreaterThan(0);
-  await page.goto(app + "/lesson/jee-physics-2027-lesson-3");
-  await expect(page.getByText("Page 1 of 1", { exact: true })).toBeVisible();
+  await page.goto(app + "/lesson/laptop-diagnostics-lesson-3");
+  await expect(page.getByText("Page 1 of 4", { exact: true })).toBeVisible();
   await expect
     .poll(() =>
       page.locator("canvas").evaluate((c: HTMLCanvasElement) => c.width),
@@ -250,8 +252,10 @@ test("owner and learner navigation remain usable with no serious accessibility v
           "/reports",
           "/workspace",
           "/permissions",
+          "/batches",
+          "/practicals",
         ]
-      : ["/courses", "/tests", "/subscription", "/profile"]) {
+      : ["/courses", "/tests", "/subscription", "/profile", "/bench"]) {
       await page.goto((kind === "owner" ? cp : app) + path);
       await expect(page.locator("h1").first()).toBeVisible();
       expect(
@@ -263,4 +267,74 @@ test("owner and learner navigation remain usable with no serious accessibility v
     expect(errors).toEqual([]);
     await context.close();
   }
+});
+
+test("owner manages a training batch and reviews bench work submitted from the learner app", async ({
+  browser,
+}) => {
+  const oc = await browser.newContext(),
+    lc = await browser.newContext({ viewport: { width: 393, height: 852 } }),
+    o = await oc.newPage(),
+    l = await lc.newPage();
+  await owner(o);
+  await o.goto(cp + "/batches");
+  await o.getByRole("button", { name: "Create batch", exact: true }).click();
+  const dialog = o.getByRole("dialog");
+  await dialog
+    .getByLabel("Laptop Repair · From Fault to Fix", { exact: false })
+    .check();
+  await dialog.getByLabel("Aarav Sharma", { exact: false }).check();
+  await dialog
+    .getByLabel("Batch name", { exact: true })
+    .fill("Laptop bench cohort " + Date.now());
+  await dialog
+    .getByLabel("Trainer name", { exact: true })
+    .fill("Sandeep Verma");
+  await dialog
+    .getByLabel("Weekly schedule (IST)", { exact: true })
+    .fill("Saturday · 10 AM IST");
+  await dialog.getByRole("button", { name: "Save batch", exact: true }).click();
+  await expect(o.getByRole("dialog")).toHaveCount(0);
+  await learner(l);
+  await l.goto(app + "/bench");
+  await l
+    .getByRole("button", { name: "Submit bench work", exact: true })
+    .click();
+  const title = "Training board inspection " + Date.now();
+  await l.getByLabel("Practical title", { exact: true }).fill(title);
+  await l
+    .getByLabel("Observations & safe test plan", { exact: true })
+    .fill(
+      "Training board with external power removed and battery isolated under trainer supervision. Checked ESD preparation and recorded a loose connector. Requesting review before any powered measurements.",
+    );
+  await l.getByRole("button", { name: "Send to trainer", exact: true }).click();
+  await expect(l.getByRole("dialog")).toHaveCount(0);
+  await expect(
+    l.getByRole("heading", { name: title, exact: true }),
+  ).toBeVisible();
+  await o.goto(cp + "/practicals");
+  await o
+    .locator(".practical-card")
+    .filter({ has: o.getByRole("heading", { name: title, exact: true }) })
+    .getByRole("button", { name: "Review submission", exact: true })
+    .click();
+  await o
+    .getByLabel("Review decision", { exact: true })
+    .selectOption("Competent");
+  await o.getByLabel("Rubric score (0–100)", { exact: true }).fill("88");
+  await o
+    .getByLabel("Trainer feedback", { exact: true })
+    .fill(
+      "Good safe preparation. Add exact model details and verification criteria before the next bench session.",
+    );
+  await o.getByRole("button", { name: "Publish review", exact: true }).click();
+  await expect(o.getByRole("dialog")).toHaveCount(0);
+  await l.reload();
+  const result = l
+    .locator(".bench-submission")
+    .filter({ has: l.getByRole("heading", { name: title, exact: true }) });
+  await expect(result.getByText("Competent", { exact: true })).toBeVisible();
+  await expect(result).toContainText("88/100");
+  await lc.close();
+  await oc.close();
 });

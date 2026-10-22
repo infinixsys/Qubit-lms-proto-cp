@@ -1,3 +1,4 @@
+import { registerAcademy } from "./academy.mjs";
 import Fastify from "fastify";
 import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
@@ -249,7 +250,7 @@ export async function createApp({ dbPath, logger = false } = {}) {
     if (u.status !== "Active")
       fail(
         403,
-        "Your coaching owner needs to activate your account before learning.",
+        "Your institute owner needs to activate your account before learning.",
         "ACTIVATION_REQUIRED",
       );
     assertCoachingAccess(store, u, c);
@@ -267,7 +268,12 @@ export async function createApp({ dbPath, logger = false } = {}) {
     return { c, e };
   };
   const lessonFor = (u, id) => {
-    const l = get("lessons", id);
+    // Draft removal must not make an enrolled immutable version inaccessible.
+    const l =
+      get("lessons", id) ||
+      list("versions", u.tenant)
+        .flatMap((v) => v.lessons || [])
+        .find((l) => l.id === id);
     if (!l) fail(404, "Lesson not found.");
     const { e } = enrolled(u, l.courseId);
     const v = get("versions", l.courseId + "-v" + e.version);
@@ -393,7 +399,7 @@ export async function createApp({ dbPath, logger = false } = {}) {
       audit(null, "Account registered", id);
       return reply.code(201).send({
         message:
-          "Your account is created. Sign in to choose a package. Your coaching owner will verify your subscription and activate learning access.",
+          "Your account is created. Sign in to choose a package. Your institute owner will verify your subscription and activate learning access.",
       });
     },
   );
@@ -1008,7 +1014,7 @@ export async function createApp({ dbPath, logger = false } = {}) {
         userId: u.id,
         courseId: c.id,
         version: e.version,
-        issuer: "Qubit Academy",
+        issuer: "Qubit Institute",
         issued: now(),
         status: "Valid",
       },
@@ -1288,7 +1294,7 @@ export async function createApp({ dbPath, logger = false } = {}) {
       .strict()
       .parse(req.body);
     if (target.role !== "Learner" && u.role !== "Super Admin")
-      fail(403, "Only the coaching owner can manage staff accounts.");
+      fail(403, "Only the institute owner can manage staff accounts.");
     if (b.role && b.role !== target.role) {
       if (u.role !== "Super Admin")
         fail(403, "Only Super Admin can change roles.");
@@ -1458,7 +1464,7 @@ export async function createApp({ dbPath, logger = false } = {}) {
         id,
         coaching: true,
         requiresSubscription: true,
-        image: b.image || "/images/physics.png",
+        image: b.image || "/images/repair-laptop.jpg",
         status: "Draft",
         version: 0,
         color: "sage",
@@ -1877,6 +1883,7 @@ export async function createApp({ dbPath, logger = false } = {}) {
     courseFor,
     permissionsFor,
   });
+  registerAcademy({ app, store, auth, permit });
   app.addHook("onClose", async () => db.close());
   return app;
 }
