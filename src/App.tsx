@@ -1498,7 +1498,7 @@ function CourseEditor() {
   };
   if (all.error) return <ErrorState error={all.error} />;
   if (!c) return <Loading />;
-  const editable = c.status !== "Published";
+  const editable = !["Published", "Archived"].includes(c.status);
   return (
     <>
       <Link className="back-link" to="/courses">
@@ -1512,7 +1512,7 @@ function CourseEditor() {
         action={
           <div className="inline-actions">
             <Badge>{c.status}</Badge>
-            {!editable ? (
+            {c.status === "Archived" ? null : !editable ? (
               <button
                 className="btn primary"
                 onClick={() =>

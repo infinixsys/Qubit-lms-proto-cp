@@ -524,3 +524,7 @@ input[type="checkbox"] {
 .owner-sidebar .workspace-label .workspace-logo {
   color: #14283f;
 }
+
+.subtle-note {
+  color: #5c6d84;
+}

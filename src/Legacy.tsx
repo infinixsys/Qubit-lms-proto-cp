@@ -1998,7 +1998,7 @@ function ResourcePage({ kind }: { kind: string }) {
           ["assignments", "sessions", "discussions"].includes(kind)
         ) ||
           catalogue.data?.some(
-            (c: Row) => c.coaching && c.id === r.courseId,
+            (c: Row) => c.coaching && !c.legacyDemo && c.id === r.courseId,
           )) &&
         JSON.stringify(r).toLowerCase().includes(search.toLowerCase()) &&
         (status === "All statuses" || r.status === status),

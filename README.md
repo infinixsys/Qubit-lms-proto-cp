@@ -26,4 +26,4 @@ Six demo programs cover mobile, laptop/computer repairs, electronics, soldering 
 
 `npm test` runs backend regressions. `npm run test:e2e` exercises both interfaces, uploads, approvals, video/PDF rendering, offline expiry and practical reviews. `npm run build` and `npm run format:check` validate the web source. Payments are manually reviewed; production payment processing and outbound messaging are not connected.
 
-[Download the Android prototype](https://github.com/infinixsys/Qubit-lms-proto-app/releases/download/android-prototype-refix-2026-10-22/Refix-India-Institute-debug.apk) · [Release notes](https://github.com/infinixsys/Qubit-lms-proto-app/releases/tag/android-prototype-refix-2026-10-22).
+[Download the Android prototype](https://github.com/infinixsys/Qubit-lms-proto-app/releases/download/android-prototype-refix-2026-10-22-r2/Refix-India-Institute-debug.apk) · [Release notes](https://github.com/infinixsys/Qubit-lms-proto-app/releases/tag/android-prototype-refix-2026-10-22-r2).
